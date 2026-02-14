@@ -119,11 +119,6 @@
           <span class="label" style="margin-left:10px;">success</span>
           <span class="value" id="probText">0%</span>
         </div>
-
-        <div class="pill">
-          <span class="label">hint</span>
-          <span class="value">Drag from ship to aim • Planets reveal near approach</span>
-        </div>
       </div>
     </div>
 
@@ -133,7 +128,6 @@
         <div class="row">
           <div>
             <div class="title">Controls</div>
-            <div class="sub">Launch, reset, speed scaling</div>
           </div>
           <div class="statusPill" id="statusPill">
             <span class="dot wait" id="statusDot"></span>
@@ -142,46 +136,20 @@
         </div>
 
         <div style="display:flex; gap:10px; margin-top:12px;">
-          <button class="primary" id="launchBtn" style="flex:1;">▶ Launch</button>
           <button class="danger" id="resetBtn" style="flex:1;">↺ Reset</button>
         </div>
-
-        <div style="margin-top:12px;">
-          <div class="row">
-            <div class="title" style="font-size:13px;">Adjust speed (scales drag)</div>
-            <div class="sub"><span id="scaleLabel">1.00×</span></div>
-          </div>
-          <input id="speedScale" type="range" min="0.25" max="2.50" step="0.01" value="1.00" />
-          <div class="joystickLabel"><span>low</span><span>high</span></div>
-        </div>
-      </div>
+       </div>
 
       <div class="card">
         <div class="title">Trajectory control</div>
-        <div class="sub">Joystick sets an extra “nudge” vector (optional)</div>
-
         <div class="joystick" id="joystick">
           <div class="knob" id="knob"></div>
         </div>
-        <div class="joystickLabel">
-          <span>direction</span>
-          <span id="joystickMag">0.00</span>
-        </div>
-
-        <div class="hint" style="margin-top:8px;">
-          You can use either:
-          <ul style="margin:8px 0 0 18px; padding:0; color:var(--muted);">
-            <li>Drag from the ship on the canvas (recommended)</li>
-            <li>Joystick nudge + “Apply Nudge” below</li>
-          </ul>
-        </div>
-
-        <button id="applyNudgeBtn" style="width:100%; margin-top:10px;">Apply nudge</button>
       </div>
 
       <div class="card">
         <div class="title">Journey</div>
-        <div class="sub">Live metrics from backend HUD</div>
+        <div class="sub">Live metrics from backend</div>
 
         <div class="kv" style="margin-top:10px;">
           <div class="k">Distance to destination</div><div class="v" id="distText">—</div>
@@ -194,11 +162,6 @@
           Planets are <b style="color:var(--unknown);">white</b> until reached, then reveal:
           <b style="color:var(--good);">green</b> = good, <b style="color:var(--bad);">red</b> = bad.
         </div>
-      </div>
-
-      <div class="footerNote">
-        Backend expected at <span style="color:var(--accent); font-weight:650;">http://127.0.0.1:5000</span><br/>
-        If opening from <code>file://</code> blocks fetch, run a tiny server: <code>python -m http.server</code>
       </div>
     </div>
   </div>
@@ -246,10 +209,7 @@
     // -----------------------------
     // UI elements
     // -----------------------------
-    const launchBtn = document.getElementById("launchBtn");
     const resetBtn = document.getElementById("resetBtn");
-    const speedScale = document.getElementById("speedScale");
-    const scaleLabel = document.getElementById("scaleLabel");
 
     const progressFill = document.getElementById("progressFill");
     const progressText = document.getElementById("progressText");
@@ -269,13 +229,13 @@
     const joystick = document.getElementById("joystick");
     const knob = document.getElementById("knob");
     const joystickMag = document.getElementById("joystickMag");
-    const applyNudgeBtn = document.getElementById("applyNudgeBtn");
 
     // -----------------------------
     // State
     // -----------------------------
     let state = null;
     let running = false;
+    let started = false;
     let initialDistance = null;
 
     // Drag-to-vector on canvas
@@ -288,6 +248,13 @@
     let joyActive = false;
     let joyVec = {x: 0, y: 0}; // normalized-ish in [-1,1]
 
+    // Local render camera (frontend authoritative for centering)
+    let renderCam = { cx: 0, cy: 0, zoom: 1.0 };
+
+    // Camera follow tuning
+    const CAM_ALPHA_UI = 0.18;   // higher = snaps more to ship
+    const LOOKAHEAD_UI = 12.0;   // smaller = less ship drifting
+
     // Trail in world coords (for nice feel)
     const trail = [];
     const TRAIL_MAX = 600;
@@ -296,23 +263,43 @@
     // Helpers: world<->screen
     // -----------------------------
     function worldToScreen(wx, wy) {
-      const cam = state.camera;
-      const zoom = cam.zoom || 1.0;
+      const zoom = renderCam.zoom || 1.0;
       const w = canvas.getBoundingClientRect().width;
       const h = canvas.getBoundingClientRect().height;
-      const sx = (wx - cam.cx) * zoom + w / 2;
-      const sy = (cam.cy - wy) * zoom + h / 2;
-      return {x: sx, y: sy};
+      return {
+        x: (wx - renderCam.cx) * zoom + w / 2,
+        y: (renderCam.cy - wy) * zoom + h / 2
+      };
     }
 
     function screenToWorld(sx, sy) {
-      const cam = state.camera;
-      const zoom = cam.zoom || 1.0;
+      const zoom = renderCam.zoom || 1.0;
       const w = canvas.getBoundingClientRect().width;
       const h = canvas.getBoundingClientRect().height;
-      const wx = (sx - w / 2) / zoom + cam.cx;
-      const wy = cam.cy - (sy - h / 2) / zoom;
-      return {x: wx, y: wy};
+      return {
+        x: (sx - w / 2) / zoom + renderCam.cx,
+        y: renderCam.cy - (sy - h / 2) / zoom
+      };
+    }
+
+    function updateRenderCamera() {
+      if (!state) return;
+
+      const r = state.rocket;
+      const z = (state.camera && state.camera.zoom) ? state.camera.zoom : 1.0;
+      renderCam.zoom = z;
+
+      // target: ship + small lookahead
+      const tx = r.x + r.vx * LOOKAHEAD_UI;
+      const ty = r.y + r.vy * LOOKAHEAD_UI;
+
+      // init on first frame
+      if (!Number.isFinite(renderCam.cx)) {
+        renderCam.cx = r.x; renderCam.cy = r.y;
+      }
+
+      renderCam.cx += (tx - renderCam.cx) * CAM_ALPHA_UI;
+      renderCam.cy += (ty - renderCam.cy) * CAM_ALPHA_UI;
     }
 
     function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
@@ -404,14 +391,10 @@
       // Status
       if (state.hud.status === "success"){
         setStatus("good", "success");
-        running = false;
-        launchBtn.textContent = "✓ Completed";
-        launchBtn.disabled = true;
+        running = true;
       } else if (state.hud.status === "failed"){
         setStatus("bad", "failed");
-        running = false;
-        launchBtn.textContent = "✕ Failed";
-        launchBtn.disabled = true;
+        running = true;
       } else {
         if (running) setStatus("run", "running");
         else setStatus("wait", "ready");
@@ -508,60 +491,6 @@
       // label like sketch
       ctx.fillStyle = "rgba(255,255,255,0.8)";
       ctx.font = "12px system-ui, sans-serif";
-      ctx.fillText("your ship", sp.x + 10, sp.y - 10);
-    }
-
-    function drawDragVector() {
-      if (!dragActive || !dragStart || !dragNow) return;
-
-      // Arrow from ship screen position to dragNow
-      const r = state.rocket;
-      const shipScreen = worldToScreen(r.x, r.y);
-
-      // Clamp arrow length in screen pixels
-      let dx = dragNow.x - shipScreen.x;
-      let dy = dragNow.y - shipScreen.y;
-      const mag = len(dx, dy);
-      if (mag > DRAG_MAX_PIXELS) {
-        const u = unit(dx, dy);
-        dx = u.x * DRAG_MAX_PIXELS;
-        dy = u.y * DRAG_MAX_PIXELS;
-      }
-
-      const end = {x: shipScreen.x + dx, y: shipScreen.y + dy};
-
-      // Line
-      ctx.beginPath();
-      ctx.moveTo(shipScreen.x, shipScreen.y);
-      ctx.lineTo(end.x, end.y);
-      ctx.strokeStyle = "rgba(255,255,255,0.78)";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Arrow head
-      const a = Math.atan2(end.y - shipScreen.y, end.x - shipScreen.x);
-      const head = 10;
-      ctx.beginPath();
-      ctx.moveTo(end.x, end.y);
-      ctx.lineTo(end.x - head * Math.cos(a - 0.5), end.y - head * Math.sin(a - 0.5));
-      ctx.lineTo(end.x - head * Math.cos(a + 0.5), end.y - head * Math.sin(a + 0.5));
-      ctx.closePath();
-      ctx.fillStyle = "rgba(255,255,255,0.78)";
-      ctx.fill();
-
-      // Convert to planned DV in world units (invert y!)
-      const zoom = state.camera.zoom || 1.0;
-      const pxToWorld = (PIXELS_TO_WORLD_BASE / zoom) * parseFloat(speedScale.value);
-
-      const dvx = dx * pxToWorld;
-      const dvy = -dy * pxToWorld; // screen down => world negative y
-      plannedDV = clampDV(dvx, dvy);
-
-      // annotate near arrow
-      ctx.fillStyle = "rgba(255,255,255,0.85)";
-      ctx.font = "12px system-ui, sans-serif";
-      const dvMag = len(plannedDV.dvx, plannedDV.dvy);
-      ctx.fillText(`Δv ≈ ${dvMag.toFixed(2)}`, end.x + 10, end.y + 4);
     }
 
     function clampDV(dvx, dvy) {
@@ -651,7 +580,6 @@
       // "General direction of destination" label (like sketch)
       ctx.fillStyle = "rgba(255,255,255,0.45)";
       ctx.font = "12px system-ui, sans-serif";
-      ctx.fillText("general direction of destination", 18, h - 18);
     }
 
     function render() {
@@ -667,7 +595,42 @@
       drawPlanets();
       drawDestinationAndArrow();
       drawShip();
-      drawDragVector();
+      drawJoystickVector();
+    }
+
+    function drawJoystickVector() {
+      if (!state) return;
+
+      const r = state.rocket;
+      const ship = worldToScreen(r.x, r.y);
+
+      const arrowPx = 110 * Math.min(1, len(joyVec.x, joyVec.y));
+
+      const vx = joyVec.x;
+      const vy = -joyVec.y; // invert screen y
+
+      const end = { x: ship.x + vx * arrowPx, y: ship.y + vy * arrowPx };
+
+      ctx.beginPath();
+      ctx.moveTo(ship.x, ship.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.strokeStyle = "rgba(255,255,255,0.8)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // arrow head
+      const a = Math.atan2(end.y - ship.y, end.x - ship.x);
+      const head = 10;
+      ctx.beginPath();
+      ctx.moveTo(end.x, end.y);
+      ctx.lineTo(end.x - head * Math.cos(a - 0.5), end.y - head * Math.sin(a - 0.5));
+      ctx.lineTo(end.x - head * Math.cos(a + 0.5), end.y - head * Math.sin(a + 0.5));
+      ctx.closePath();
+      ctx.fillStyle = "rgba(255,255,255,0.8)";
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(255,255,255,0.8)";
+      ctx.font = "12px system-ui, sans-serif";
     }
 
     // -----------------------------
@@ -686,75 +649,17 @@
       return {x, y};
     }
 
-    canvas.addEventListener("pointerdown", (evt) => {
-      if (!state) return;
-      const p = canvasPointerPos(evt);
-      if (!isNearShip(p.x, p.y)) return;
-
-      dragActive = true;
-      dragStart = p;
-      dragNow = p;
-      canvas.setPointerCapture(evt.pointerId);
-    });
-
-    canvas.addEventListener("pointermove", (evt) => {
-      if (!dragActive) return;
-      dragNow = canvasPointerPos(evt);
-    });
-
-    canvas.addEventListener("pointerup", async (evt) => {
-      if (!dragActive) return;
-      dragActive = false;
-
-      // Apply dv immediately if running; if not running, store it (still applied now for feel)
-      const dv = plannedDV;
-      plannedDV = {dvx:0, dvy:0};
-
-      // Apply plan
-      if (Math.abs(dv.dvx) > 1e-6 || Math.abs(dv.dvy) > 1e-6) {
-        try {
-          await apiPlan(dv.dvx, dv.dvy);
-        } catch (e) {
-          console.error(e);
-        }
-      }
-
-      dragStart = null;
-      dragNow = null;
-    });
-
     // -----------------------------
-    // Controls: launch / reset / speed scale
+    // Controls: reset
     // -----------------------------
-    speedScale.addEventListener("input", () => {
-      scaleLabel.textContent = `${parseFloat(speedScale.value).toFixed(2)}×`;
-    });
-
-    launchBtn.addEventListener("click", async () => {
-      if (!state) return;
-
-      // If already finished, do nothing
-      if (state.hud.status !== "running" && state.hud.status !== "ready") return;
-
-      running = !running;
-      if (running) {
-        launchBtn.textContent = "⏸ Pause";
-        launchBtn.classList.add("toggleOn");
-        setStatus("run", "running");
-      } else {
-        launchBtn.textContent = "▶ Launch";
-        launchBtn.classList.remove("toggleOn");
-        setStatus("wait", "ready");
-      }
-    });
-
     resetBtn.addEventListener("click", async () => {
-      running = false;
-      launchBtn.disabled = false;
-      launchBtn.textContent = "▶ Launch";
-      launchBtn.classList.remove("toggleOn");
-      setStatus("wait", "ready");
-      await apiReset();
+      await apiReset();   // resets planets + rocket + camera
+      started = false;
+
+      // reset joystick UI
+      joyVec = {x: 0, y: 0};
+      setKnob(0, 0);
+      joystickMag.textContent = "0.00";
     });
 
     // -----------------------------
@@ -786,9 +691,13 @@
       return {nx: cx, ny: cy, mag: Math.min(1, mm)};
     }
 
+    const JOY_DV_MAX = 3.0;   // matches backend clamp
+    const JOY_GAIN = 3.0;     // feel/tuning constant
+
     joystick.addEventListener("pointerdown", (evt) => {
       joyActive = true;
       joystick.setPointerCapture(evt.pointerId);
+
       const j = joystickPointer(evt);
       joyVec = {x: j.nx, y: j.ny};
       setKnob(joyVec.x, joyVec.y);
@@ -797,23 +706,40 @@
 
     joystick.addEventListener("pointermove", (evt) => {
       if (!joyActive) return;
+
       const j = joystickPointer(evt);
       joyVec = {x: j.nx, y: j.ny};
       setKnob(joyVec.x, joyVec.y);
       joystickMag.textContent = j.mag.toFixed(2);
     });
 
-    joystick.addEventListener("pointerup", () => {
+    joystick.addEventListener("pointerup", async () => {
       joyActive = false;
-    });
+      started = true;
 
-    applyNudgeBtn.addEventListener("click", async () => {
-      if (!state) return;
-      // Convert joystick vector to dv in world (invert y because screen y down)
-      const scale = parseFloat(speedScale.value);
-      const dv = clampDV(joyVec.x * 1.2 * scale, -joyVec.y * 1.2 * scale);
-      if (Math.abs(dv.dvx) < 1e-6 && Math.abs(dv.dvy) < 1e-6) return;
-      await apiPlan(dv.dvx, dv.dvy);
+      // magnitude in [0,1]
+      const mag = Math.min(1.0, Math.sqrt(joyVec.x*joyVec.x + joyVec.y*joyVec.y));
+
+      // convert joystick into dv (world units)
+      let dvx = joyVec.x * JOY_GAIN * mag;
+      let dvy = -joyVec.y * JOY_GAIN * mag; // invert y
+
+      // clamp to max
+      const m = Math.sqrt(dvx*dvx + dvy*dvy);
+      if (m > JOY_DV_MAX) {
+        dvx = dvx / m * JOY_DV_MAX;
+        dvy = dvy / m * JOY_DV_MAX;
+      }
+
+      // apply burn
+      if (Math.abs(dvx) > 1e-6 || Math.abs(dvy) > 1e-6) {
+        await apiPlan(dvx, dvy);
+      }
+
+      // reset knob visually
+      joyVec = {x: 0, y: 0};
+      setKnob(0, 0);
+      joystickMag.textContent = "0.00";
     });
 
     // -----------------------------
@@ -826,16 +752,15 @@
 
       if (state) {
         // step while running
-        if (running && state.hud.status === "running") {
-          // You can step at a fixed dt for consistency
+        if (started && state.hud.status === "running") {
           try {
             await apiStep(STEP_DT);
           } catch (e) {
             console.error(e);
-            running = false;
             setStatus("bad", "backend error");
           }
         }
+        updateRenderCamera();
         render();
       }
 
@@ -846,7 +771,6 @@
     // Boot
     // -----------------------------
     (async function boot(){
-      scaleLabel.textContent = `${parseFloat(speedScale.value).toFixed(2)}×`;
       setStatus("wait", "connecting...");
       try {
         await apiGetState();
