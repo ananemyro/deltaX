@@ -1,176 +1,864 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Gravitational Slingshot Simulator (Placeholder)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gravitational Slingshot Simulator</title>
   <style>
-    body { font-family: system-ui, sans-serif; margin: 16px; }
-    .row { display: flex; gap: 16px; align-items: start; }
-    canvas { border: 1px solid #ccc; border-radius: 8px; }
-    .panel { width: 320px; }
-    .panel > * { margin-bottom: 10px; }
-    button { padding: 8px 10px; }
-    input { width: 100%; }
-    code { background: #f6f6f6; padding: 2px 6px; border-radius: 6px; }
+    :root{
+      --bg:#050506;
+      --panel:#0d0f14;
+      --panel2:#0a0c10;
+      --text:#e8eef7;
+      --muted:#9aa6b2;
+      --accent:#5fe3ff;
+      --good:#6dff57;
+      --bad:#ff4d4d;
+      --unknown:#cfcfcf;
+      --ship:#54f0ff;
+      --stroke:rgba(255,255,255,.16);
+    }
+    html,body{height:100%; margin:0; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
+    .wrap{display:grid; grid-template-columns: 1fr 360px; gap:14px; height:100%; padding:14px; box-sizing:border-box;}
+    .stage{position:relative; border:1px solid var(--stroke); border-radius:18px; overflow:hidden; background:radial-gradient(1200px 800px at 40% 40%, rgba(120,160,255,.08), rgba(0,0,0,0) 55%);}
+    canvas{width:100%; height:100%; display:block;}
+    .hudTop{position:absolute; left:14px; top:14px; display:flex; flex-direction:column; gap:10px; pointer-events:none;}
+    .pill{pointer-events:none; display:inline-flex; align-items:center; gap:10px; padding:10px 12px; border-radius:999px; background:rgba(20,24,34,.72); border:1px solid var(--stroke); backdrop-filter: blur(6px); }
+    .pill .label{font-size:12px; color:var(--muted); margin-right:6px;}
+    .pill .value{font-weight:600; font-size:13px;}
+    .progressBar{width:240px; height:10px; border-radius:999px; background:rgba(255,255,255,.10); overflow:hidden; border:1px solid rgba(255,255,255,.12);}
+    .progressFill{height:100%; width:0%; background:linear-gradient(90deg, rgba(95,227,255,.95), rgba(109,255,87,.9));}
+    .side{
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      background:linear-gradient(180deg, rgba(10,12,16,.92), rgba(10,12,16,.72));
+      padding:14px;
+      box-sizing:border-box;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      overflow:auto;
+    }
+    .card{background:rgba(0,0,0,.25); border:1px solid var(--stroke); border-radius:16px; padding:12px;}
+    .row{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+    .title{font-weight:700; font-size:14px; letter-spacing:.2px;}
+    .sub{font-size:12px; color:var(--muted); margin-top:2px;}
+    button{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:14px;
+      cursor:pointer;
+      font-weight:650;
+      transition:transform .04s ease, background .15s ease;
+    }
+    button:hover{background:rgba(255,255,255,.10);}
+    button:active{transform:translateY(1px);}
+    .primary{background:rgba(95,227,255,.18); border-color:rgba(95,227,255,.35);}
+    .primary:hover{background:rgba(95,227,255,.24);}
+    .danger{background:rgba(255,77,77,.14); border-color:rgba(255,77,77,.35);}
+    .danger:hover{background:rgba(255,77,77,.20);}
+    .toggleOn{background:rgba(109,255,87,.16); border-color:rgba(109,255,87,.34);}
+    input[type="range"]{width:100%;}
+    .kv{display:grid; grid-template-columns: 1fr auto; gap:6px 10px; align-items:center; font-size:13px;}
+    .kv .k{color:var(--muted);}
+    .kv .v{font-weight:650;}
+    .hint{font-size:12px; color:var(--muted); line-height:1.35;}
+    .joystick{
+      width:190px; height:190px; border-radius:999px;
+      border:1px solid rgba(95,227,255,.28);
+      background:radial-gradient(closest-side, rgba(95,227,255,.14), rgba(0,0,0,0) 70%);
+      position:relative;
+      margin:10px auto 2px auto;
+      touch-action:none;
+      user-select:none;
+    }
+    .knob{
+      width:38px; height:38px; border-radius:999px;
+      background:rgba(95,227,255,.85);
+      position:absolute; left:50%; top:50%;
+      transform:translate(-50%,-50%);
+      box-shadow:0 10px 30px rgba(95,227,255,.18);
+    }
+    .joystickLabel{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-top:6px;}
+    .statusPill{display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border-radius:999px; border:1px solid var(--stroke); background:rgba(255,255,255,.05); font-size:12px;}
+    .dot{width:8px; height:8px; border-radius:99px; background:rgba(255,255,255,.35);}
+    .dot.good{background:var(--good);}
+    .dot.bad{background:var(--bad);}
+    .dot.run{background:var(--accent);}
+    .dot.wait{background:rgba(255,255,255,.35);}
+    .footerNote{font-size:12px; color:var(--muted); text-align:center;}
+    a{color:var(--accent);}
   </style>
 </head>
 <body>
-  <h2>deltaX</h2>
+  <div class="wrap">
+    <!-- Stage -->
+    <div class="stage">
+      <canvas id="c"></canvas>
 
-  <div class="row">
-    <canvas id="c" width="800" height="520"></canvas>
+      <!-- Top-left HUD like in sketch -->
+      <div class="hudTop">
+        <div class="pill" style="width: 300px;">
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; justify-content:space-between; width:100%;">
+              <span class="label">progression chart</span>
+              <span class="value" id="progressText">0%</span>
+            </div>
+            <div class="progressBar">
+              <div class="progressFill" id="progressFill"></div>
+            </div>
+          </div>
+        </div>
 
-    <div class="panel">
-      <button id="toggle">▶ Run</button>
-      <button id="reset">↺ Reset</button>
+        <div class="pill">
+          <span class="label">current speed</span>
+          <span class="value" id="speedText">0.00</span>
+          <span class="label" style="margin-left:10px;">success</span>
+          <span class="value" id="probText">0%</span>
+        </div>
 
-      <label>Time step (dt): <span id="dtLabel">0.016</span></label>
-      <input id="dt" type="range" min="0.005" max="0.05" step="0.001" value="0.016"/>
+        <div class="pill">
+          <span class="label">hint</span>
+          <span class="value">Drag from ship to aim • Planets reveal near approach</span>
+        </div>
+      </div>
+    </div>
 
-      <label>Planet mass: <span id="mLabel">2000</span></label>
-      <input id="m" type="range" min="200" max="8000" step="50" value="2000"/>
+    <!-- Side panel -->
+    <div class="side">
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="title">Controls</div>
+            <div class="sub">Launch, reset, speed scaling</div>
+          </div>
+          <div class="statusPill" id="statusPill">
+            <span class="dot wait" id="statusDot"></span>
+            <span id="statusText">ready</span>
+          </div>
+        </div>
 
-      <div id="stats"></div>
+        <div style="display:flex; gap:10px; margin-top:12px;">
+          <button class="primary" id="launchBtn" style="flex:1;">▶ Launch</button>
+          <button class="danger" id="resetBtn" style="flex:1;">↺ Reset</button>
+        </div>
 
-      <p style="font-size: 0.9em;">
-        Tip: later you can add click-to-place planet, drag-to-aim initial velocity, trail rendering, etc.
-      </p>
+        <div style="margin-top:12px;">
+          <div class="row">
+            <div class="title" style="font-size:13px;">Adjust speed (scales drag)</div>
+            <div class="sub"><span id="scaleLabel">1.00×</span></div>
+          </div>
+          <input id="speedScale" type="range" min="0.25" max="2.50" step="0.01" value="1.00" />
+          <div class="joystickLabel"><span>low</span><span>high</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="title">Trajectory control</div>
+        <div class="sub">Joystick sets an extra “nudge” vector (optional)</div>
+
+        <div class="joystick" id="joystick">
+          <div class="knob" id="knob"></div>
+        </div>
+        <div class="joystickLabel">
+          <span>direction</span>
+          <span id="joystickMag">0.00</span>
+        </div>
+
+        <div class="hint" style="margin-top:8px;">
+          You can use either:
+          <ul style="margin:8px 0 0 18px; padding:0; color:var(--muted);">
+            <li>Drag from the ship on the canvas (recommended)</li>
+            <li>Joystick nudge + “Apply Nudge” below</li>
+          </ul>
+        </div>
+
+        <button id="applyNudgeBtn" style="width:100%; margin-top:10px;">Apply nudge</button>
+      </div>
+
+      <div class="card">
+        <div class="title">Journey</div>
+        <div class="sub">Live metrics from backend HUD</div>
+
+        <div class="kv" style="margin-top:10px;">
+          <div class="k">Distance to destination</div><div class="v" id="distText">—</div>
+          <div class="k">Speed</div><div class="v" id="speedText2">—</div>
+          <div class="k">Success probability</div><div class="v" id="probText2">—</div>
+          <div class="k">Time</div><div class="v" id="timeText">—</div>
+        </div>
+
+        <div class="hint" style="margin-top:10px;">
+          Planets are <b style="color:var(--unknown);">white</b> until reached, then reveal:
+          <b style="color:var(--good);">green</b> = good, <b style="color:var(--bad);">red</b> = bad.
+        </div>
+      </div>
+
+      <div class="footerNote">
+        Backend expected at <span style="color:var(--accent); font-weight:650;">http://127.0.0.1:5000</span><br/>
+        If opening from <code>file://</code> blocks fetch, run a tiny server: <code>python -m http.server</code>
+      </div>
     </div>
   </div>
 
   <script>
+    // -----------------------------
+    // Config
+    // -----------------------------
     const API = "http://127.0.0.1:5000/api";
+    const STEP_DT = 0.016; // UI step tick; backend clamps anyway
+
+    // Visual tuning
+    const STAR_COUNT = 120;
+    const SHIP_SIZE = 10;
+    const DEST_EDGE_ARROW_SIZE = 22;
+
+    // Drag-to-plan tuning
+    const DRAG_MAX_PIXELS = 220;        // clamp arrow length on screen
+    const PIXELS_TO_WORLD_BASE = 0.015; // base conversion; final = base / zoom
+
+    // -----------------------------
+    // Canvas setup
+    // -----------------------------
     const canvas = document.getElementById("c");
     const ctx = canvas.getContext("2d");
 
-    const btnToggle = document.getElementById("toggle");
-    const btnReset = document.getElementById("reset");
-    const dtSlider = document.getElementById("dt");
-    const mSlider  = document.getElementById("m");
-    const dtLabel  = document.getElementById("dtLabel");
-    const mLabel   = document.getElementById("mLabel");
-    const stats    = document.getElementById("stats");
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.floor(rect.width * dpr);
+      canvas.height = Math.floor(rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // draw in CSS pixels
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
 
-    let running = false;
+    // Background stars (static in screen space)
+    const stars = Array.from({length: STAR_COUNT}, () => ({
+      x: Math.random(),
+      y: Math.random(),
+      r: Math.random() * 1.6 + 0.2,
+      a: Math.random() * 0.6 + 0.2
+    }));
+
+    // -----------------------------
+    // UI elements
+    // -----------------------------
+    const launchBtn = document.getElementById("launchBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const speedScale = document.getElementById("speedScale");
+    const scaleLabel = document.getElementById("scaleLabel");
+
+    const progressFill = document.getElementById("progressFill");
+    const progressText = document.getElementById("progressText");
+    const speedText = document.getElementById("speedText");
+    const probText = document.getElementById("probText");
+
+    const distText = document.getElementById("distText");
+    const speedText2 = document.getElementById("speedText2");
+    const probText2 = document.getElementById("probText2");
+    const timeText = document.getElementById("timeText");
+
+    const statusPill = document.getElementById("statusPill");
+    const statusDot = document.getElementById("statusDot");
+    const statusText = document.getElementById("statusText");
+
+    // Joystick
+    const joystick = document.getElementById("joystick");
+    const knob = document.getElementById("knob");
+    const joystickMag = document.getElementById("joystickMag");
+    const applyNudgeBtn = document.getElementById("applyNudgeBtn");
+
+    // -----------------------------
+    // State
+    // -----------------------------
     let state = null;
-    let trail = [];
+    let running = false;
+    let initialDistance = null;
 
-    function worldToScreen(x, y) {
-      // center world at canvas center
-      const cx = canvas.width / 2;
-      const cy = canvas.height / 2;
-      return [cx + x, cy - y];
+    // Drag-to-vector on canvas
+    let dragActive = false;
+    let dragStart = null;   // {x,y} in screen coords (CSS px)
+    let dragNow = null;     // {x,y}
+    let plannedDV = {dvx: 0, dvy: 0}; // world units
+
+    // Joystick vector (world dv)
+    let joyActive = false;
+    let joyVec = {x: 0, y: 0}; // normalized-ish in [-1,1]
+
+    // Trail in world coords (for nice feel)
+    const trail = [];
+    const TRAIL_MAX = 600;
+
+    // -----------------------------
+    // Helpers: world<->screen
+    // -----------------------------
+    function worldToScreen(wx, wy) {
+      const cam = state.camera;
+      const zoom = cam.zoom || 1.0;
+      const w = canvas.getBoundingClientRect().width;
+      const h = canvas.getBoundingClientRect().height;
+      const sx = (wx - cam.cx) * zoom + w / 2;
+      const sy = (cam.cy - wy) * zoom + h / 2;
+      return {x: sx, y: sy};
     }
 
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // draw origin crosshair
-      ctx.beginPath();
-      ctx.moveTo(canvas.width/2 - 10, canvas.height/2);
-      ctx.lineTo(canvas.width/2 + 10, canvas.height/2);
-      ctx.moveTo(canvas.width/2, canvas.height/2 - 10);
-      ctx.lineTo(canvas.width/2, canvas.height/2 + 10);
-      ctx.strokeStyle = "#ddd";
-      ctx.stroke();
-
-      if (!state) return;
-
-      // trail
-      ctx.beginPath();
-      for (let i = 0; i < trail.length; i++) {
-        const [sx, sy] = worldToScreen(trail[i].x, trail[i].y);
-        if (i === 0) ctx.moveTo(sx, sy);
-        else ctx.lineTo(sx, sy);
-      }
-      ctx.strokeStyle = "rgba(0,0,0,0.25)";
-      ctx.stroke();
-
-      // planet
-      const p = state.planet;
-      const [px, py] = worldToScreen(p.x, p.y);
-      ctx.beginPath();
-      ctx.arc(px, py, 18, 0, Math.PI * 2);
-      ctx.fillStyle = "#444";
-      ctx.fill();
-
-      // ship
-      const s = state.ship;
-      const [sx, sy] = worldToScreen(s.x, s.y);
-      ctx.beginPath();
-      ctx.arc(sx, sy, 5, 0, Math.PI * 2);
-      ctx.fillStyle = "#1b6";
-      ctx.fill();
-
-      // velocity vector
-      ctx.beginPath();
-      ctx.moveTo(sx, sy);
-      ctx.lineTo(sx + s.vx * 12, sy - s.vy * 12);
-      ctx.strokeStyle = "#1b6";
-      ctx.stroke();
+    function screenToWorld(sx, sy) {
+      const cam = state.camera;
+      const zoom = cam.zoom || 1.0;
+      const w = canvas.getBoundingClientRect().width;
+      const h = canvas.getBoundingClientRect().height;
+      const wx = (sx - w / 2) / zoom + cam.cx;
+      const wy = cam.cy - (sy - h / 2) / zoom;
+      return {x: wx, y: wy};
     }
 
-    async function getState() {
+    function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+    function len(x,y){ return Math.sqrt(x*x+y*y); }
+    function unit(x,y){
+      const n = len(x,y);
+      if (n < 1e-9) return {x:0,y:0};
+      return {x:x/n,y:y/n};
+    }
+
+    // -----------------------------
+    // API calls
+    // -----------------------------
+    async function apiGetState() {
       const res = await fetch(`${API}/state`);
       state = await res.json();
       return state;
     }
 
-    async function stepOnce() {
-      const dt = parseFloat(dtSlider.value);
-      const res = await fetch(`${API}/step`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dt })
-      });
-      state = await res.json();
-
-      trail.push({ x: state.ship.x, y: state.ship.y });
-      if (trail.length > 600) trail.shift();
-
-      stats.innerHTML =
-        `t = ${state.t.toFixed(2)}<br>` +
-        `ship: x=${state.ship.x.toFixed(1)}, y=${state.ship.y.toFixed(1)}<br>` +
-        `v: vx=${state.ship.vx.toFixed(2)}, vy=${state.ship.vy.toFixed(2)}`;
-
-      draw();
-    }
-
-    async function reset() {
-      const planet_m = parseFloat(mSlider.value);
+    async function apiReset(seed=null) {
+      const body = seed == null ? {} : {seed};
       const res = await fetch(`${API}/reset`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planet_m })
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(body)
       });
       state = await res.json();
-      trail = [{ x: state.ship.x, y: state.ship.y }];
-      draw();
+      initialDistance = state.hud.distance_to_destination;
+      trail.length = 0;
+      trail.push({x: state.rocket.x, y: state.rocket.y});
+      plannedDV = {dvx: 0, dvy: 0};
+      updateHUD();
+      return state;
     }
 
-    function loop() {
-      if (running) stepOnce().catch(console.error);
-      requestAnimationFrame(loop);
+    async function apiStep(dt) {
+      const res = await fetch(`${API}/step`, {
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({dt})
+      });
+      state = await res.json();
+      trail.push({x: state.rocket.x, y: state.rocket.y});
+      if (trail.length > TRAIL_MAX) trail.shift();
+      updateHUD();
+      return state;
     }
 
-    // UI wiring
-    btnToggle.onclick = () => {
+    async function apiPlan(dvx, dvy) {
+      const res = await fetch(`${API}/plan`, {
+        method:"POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({dvx, dvy})
+      });
+      state = await res.json();
+      updateHUD();
+      return state;
+    }
+
+    // -----------------------------
+    // HUD / status updates
+    // -----------------------------
+    function setStatus(kind, text){
+      statusText.textContent = text;
+      statusDot.className = "dot " + kind;
+    }
+
+    function updateHUD(){
+      if (!state) return;
+
+      const d = state.hud.distance_to_destination;
+      const v = state.hud.speed;
+      const p = state.hud.success_probability;
+
+      // Progress
+      if (initialDistance == null) initialDistance = d;
+      const prog = clamp(1 - d / Math.max(1e-6, initialDistance), 0, 1);
+      progressFill.style.width = `${(prog*100).toFixed(1)}%`;
+      progressText.textContent = `${Math.round(prog*100)}%`;
+
+      speedText.textContent = v.toFixed(2);
+      probText.textContent = `${Math.round(p*100)}%`;
+
+      distText.textContent = d.toFixed(1);
+      speedText2.textContent = v.toFixed(2);
+      probText2.textContent = `${Math.round(p*100)}%`;
+      timeText.textContent = state.t.toFixed(2);
+
+      // Status
+      if (state.hud.status === "success"){
+        setStatus("good", "success");
+        running = false;
+        launchBtn.textContent = "✓ Completed";
+        launchBtn.disabled = true;
+      } else if (state.hud.status === "failed"){
+        setStatus("bad", "failed");
+        running = false;
+        launchBtn.textContent = "✕ Failed";
+        launchBtn.disabled = true;
+      } else {
+        if (running) setStatus("run", "running");
+        else setStatus("wait", "ready");
+      }
+    }
+
+    // -----------------------------
+    // Drawing
+    // -----------------------------
+    function drawStars() {
+      const w = canvas.getBoundingClientRect().width;
+      const h = canvas.getBoundingClientRect().height;
+
+      for (const s of stars) {
+        ctx.beginPath();
+        ctx.arc(s.x*w, s.y*h, s.r, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(255,255,255,${s.a})`;
+        ctx.fill();
+      }
+    }
+
+    function drawTrail() {
+      if (!state || trail.length < 2) return;
+      ctx.beginPath();
+      for (let i=0;i<trail.length;i++){
+        const p = trail[i];
+        const sp = worldToScreen(p.x, p.y);
+        if (i===0) ctx.moveTo(sp.x, sp.y);
+        else ctx.lineTo(sp.x, sp.y);
+      }
+      ctx.strokeStyle = "rgba(95,227,255,0.22)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    function drawPlanets() {
+      for (const p of state.planets) {
+        const sp = worldToScreen(p.x, p.y);
+
+        // Planet body
+        ctx.beginPath();
+        ctx.arc(sp.x, sp.y, p.radius * state.camera.zoom, 0, Math.PI*2);
+
+        let fill = "rgba(207,207,207,0.85)";
+        if (p.color === "green") fill = "rgba(109,255,87,0.90)";
+        if (p.color === "red")   fill = "rgba(255,77,77,0.90)";
+
+        ctx.fillStyle = fill;
+        ctx.fill();
+
+        // subtle ring
+        ctx.beginPath();
+        ctx.arc(sp.x, sp.y, (p.radius * state.camera.zoom) + 6, 0, Math.PI*2);
+        ctx.strokeStyle = "rgba(255,255,255,0.08)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // If revealed bad & unrecoverable, add warning halo
+        if (p.revealed && p.status === "bad" && !p.recoverable) {
+          ctx.beginPath();
+          ctx.arc(sp.x, sp.y, (p.radius * state.camera.zoom) + 14, 0, Math.PI*2);
+          ctx.strokeStyle = "rgba(255,77,77,0.22)";
+          ctx.lineWidth = 6;
+          ctx.stroke();
+        }
+      }
+    }
+
+    function drawShip() {
+      const r = state.rocket;
+      const sp = worldToScreen(r.x, r.y);
+
+      // ship as diamond
+      ctx.save();
+      ctx.translate(sp.x, sp.y);
+
+      const ang = Math.atan2(r.vy, r.vx);
+      ctx.rotate(-ang); // screen y down, our world y up -> rotate opposite for nicer feel
+
+      ctx.beginPath();
+      ctx.moveTo(0, -SHIP_SIZE);
+      ctx.lineTo(SHIP_SIZE*1.3, 0);
+      ctx.lineTo(0, SHIP_SIZE);
+      ctx.lineTo(-SHIP_SIZE*1.3, 0);
+      ctx.closePath();
+      ctx.fillStyle = "rgba(84,240,255,0.92)";
+      ctx.fill();
+
+      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+
+      // label like sketch
+      ctx.fillStyle = "rgba(255,255,255,0.8)";
+      ctx.font = "12px system-ui, sans-serif";
+      ctx.fillText("your ship", sp.x + 10, sp.y - 10);
+    }
+
+    function drawDragVector() {
+      if (!dragActive || !dragStart || !dragNow) return;
+
+      // Arrow from ship screen position to dragNow
+      const r = state.rocket;
+      const shipScreen = worldToScreen(r.x, r.y);
+
+      // Clamp arrow length in screen pixels
+      let dx = dragNow.x - shipScreen.x;
+      let dy = dragNow.y - shipScreen.y;
+      const mag = len(dx, dy);
+      if (mag > DRAG_MAX_PIXELS) {
+        const u = unit(dx, dy);
+        dx = u.x * DRAG_MAX_PIXELS;
+        dy = u.y * DRAG_MAX_PIXELS;
+      }
+
+      const end = {x: shipScreen.x + dx, y: shipScreen.y + dy};
+
+      // Line
+      ctx.beginPath();
+      ctx.moveTo(shipScreen.x, shipScreen.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.strokeStyle = "rgba(255,255,255,0.78)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Arrow head
+      const a = Math.atan2(end.y - shipScreen.y, end.x - shipScreen.x);
+      const head = 10;
+      ctx.beginPath();
+      ctx.moveTo(end.x, end.y);
+      ctx.lineTo(end.x - head * Math.cos(a - 0.5), end.y - head * Math.sin(a - 0.5));
+      ctx.lineTo(end.x - head * Math.cos(a + 0.5), end.y - head * Math.sin(a + 0.5));
+      ctx.closePath();
+      ctx.fillStyle = "rgba(255,255,255,0.78)";
+      ctx.fill();
+
+      // Convert to planned DV in world units (invert y!)
+      const zoom = state.camera.zoom || 1.0;
+      const pxToWorld = (PIXELS_TO_WORLD_BASE / zoom) * parseFloat(speedScale.value);
+
+      const dvx = dx * pxToWorld;
+      const dvy = -dy * pxToWorld; // screen down => world negative y
+      plannedDV = clampDV(dvx, dvy);
+
+      // annotate near arrow
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      ctx.font = "12px system-ui, sans-serif";
+      const dvMag = len(plannedDV.dvx, plannedDV.dvy);
+      ctx.fillText(`Δv ≈ ${dvMag.toFixed(2)}`, end.x + 10, end.y + 4);
+    }
+
+    function clampDV(dvx, dvy) {
+      // Backend clamps too, but matching here feels better
+      const DV_MAX = 3.0;
+      const m = len(dvx, dvy);
+      if (m <= DV_MAX) return {dvx, dvy};
+      const u = unit(dvx, dvy);
+      return {dvx: u.x * DV_MAX, dvy: u.y * DV_MAX};
+    }
+
+    function drawDestinationAndArrow() {
+      const dest = state.destination;
+      const rocket = state.rocket;
+
+      // Draw destination circle if on-screen
+      const ds = worldToScreen(dest.x, dest.y);
+      const w = canvas.getBoundingClientRect().width;
+      const h = canvas.getBoundingClientRect().height;
+
+      const onScreen = (ds.x >= -60 && ds.x <= w+60 && ds.y >= -60 && ds.y <= h+60);
+
+      if (onScreen) {
+        ctx.beginPath();
+        ctx.arc(ds.x, ds.y, dest.radius * state.camera.zoom, 0, Math.PI*2);
+        ctx.strokeStyle = "rgba(95,227,255,0.55)";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(95,227,255,0.9)";
+        ctx.font = "12px system-ui, sans-serif";
+        ctx.fillText("destination", ds.x + 10, ds.y - 10);
+      }
+
+      // Always draw edge arrow pointing toward destination (so player isn't lost)
+      const shipS = worldToScreen(rocket.x, rocket.y);
+      const vx = ds.x - shipS.x;
+      const vy = ds.y - shipS.y;
+
+      // Find intersection with safe rect
+      const pad = 26;
+      const minX = pad, maxX = w - pad, minY = pad, maxY = h - pad;
+
+      // If destination is on screen and close-ish, keep arrow small near it; else clamp to edge
+      let ax = ds.x, ay = ds.y;
+      if (!onScreen) {
+        // Ray from center to dest; intersect with bounds
+        const cx = w/2, cy = h/2;
+        const rx = ds.x - cx, ry = ds.y - cy;
+        const tCandidates = [];
+
+        if (Math.abs(rx) > 1e-6) {
+          tCandidates.push((minX - cx) / rx);
+          tCandidates.push((maxX - cx) / rx);
+        }
+        if (Math.abs(ry) > 1e-6) {
+          tCandidates.push((minY - cy) / ry);
+          tCandidates.push((maxY - cy) / ry);
+        }
+
+        let best = null;
+        for (const t of tCandidates) {
+          if (t <= 0) continue;
+          const x = cx + rx * t;
+          const y = cy + ry * t;
+          if (x >= minX-1 && x <= maxX+1 && y >= minY-1 && y <= maxY+1) {
+            if (best === null || t < best.t) best = {t, x, y};
+          }
+        }
+        if (best) { ax = best.x; ay = best.y; }
+      }
+
+      const ang = Math.atan2(vy, vx);
+      ctx.save();
+      ctx.translate(ax, ay);
+      ctx.rotate(ang);
+
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-DEST_EDGE_ARROW_SIZE, -DEST_EDGE_ARROW_SIZE/2);
+      ctx.lineTo(-DEST_EDGE_ARROW_SIZE,  DEST_EDGE_ARROW_SIZE/2);
+      ctx.closePath();
+      ctx.fillStyle = "rgba(95,227,255,0.70)";
+      ctx.fill();
+      ctx.restore();
+
+      // "General direction of destination" label (like sketch)
+      ctx.fillStyle = "rgba(255,255,255,0.45)";
+      ctx.font = "12px system-ui, sans-serif";
+      ctx.fillText("general direction of destination", 18, h - 18);
+    }
+
+    function render() {
+      if (!state) return;
+
+      const w = canvas.getBoundingClientRect().width;
+      const h = canvas.getBoundingClientRect().height;
+
+      ctx.clearRect(0,0,w,h);
+
+      drawStars();
+      drawTrail();
+      drawPlanets();
+      drawDestinationAndArrow();
+      drawShip();
+      drawDragVector();
+    }
+
+    // -----------------------------
+    // Interaction: canvas drag
+    // -----------------------------
+    function isNearShip(screenX, screenY) {
+      const r = state.rocket;
+      const sp = worldToScreen(r.x, r.y);
+      return len(screenX - sp.x, screenY - sp.y) < 26;
+    }
+
+    function canvasPointerPos(evt) {
+      const rect = canvas.getBoundingClientRect();
+      const x = (evt.clientX - rect.left);
+      const y = (evt.clientY - rect.top);
+      return {x, y};
+    }
+
+    canvas.addEventListener("pointerdown", (evt) => {
+      if (!state) return;
+      const p = canvasPointerPos(evt);
+      if (!isNearShip(p.x, p.y)) return;
+
+      dragActive = true;
+      dragStart = p;
+      dragNow = p;
+      canvas.setPointerCapture(evt.pointerId);
+    });
+
+    canvas.addEventListener("pointermove", (evt) => {
+      if (!dragActive) return;
+      dragNow = canvasPointerPos(evt);
+    });
+
+    canvas.addEventListener("pointerup", async (evt) => {
+      if (!dragActive) return;
+      dragActive = false;
+
+      // Apply dv immediately if running; if not running, store it (still applied now for feel)
+      const dv = plannedDV;
+      plannedDV = {dvx:0, dvy:0};
+
+      // Apply plan
+      if (Math.abs(dv.dvx) > 1e-6 || Math.abs(dv.dvy) > 1e-6) {
+        try {
+          await apiPlan(dv.dvx, dv.dvy);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      dragStart = null;
+      dragNow = null;
+    });
+
+    // -----------------------------
+    // Controls: launch / reset / speed scale
+    // -----------------------------
+    speedScale.addEventListener("input", () => {
+      scaleLabel.textContent = `${parseFloat(speedScale.value).toFixed(2)}×`;
+    });
+
+    launchBtn.addEventListener("click", async () => {
+      if (!state) return;
+
+      // If already finished, do nothing
+      if (state.hud.status !== "running" && state.hud.status !== "ready") return;
+
       running = !running;
-      btnToggle.textContent = running ? "⏸ Pause" : "▶ Run";
-    };
+      if (running) {
+        launchBtn.textContent = "⏸ Pause";
+        launchBtn.classList.add("toggleOn");
+        setStatus("run", "running");
+      } else {
+        launchBtn.textContent = "▶ Launch";
+        launchBtn.classList.remove("toggleOn");
+        setStatus("wait", "ready");
+      }
+    });
 
-    btnReset.onclick = () => reset().catch(console.error);
+    resetBtn.addEventListener("click", async () => {
+      running = false;
+      launchBtn.disabled = false;
+      launchBtn.textContent = "▶ Launch";
+      launchBtn.classList.remove("toggleOn");
+      setStatus("wait", "ready");
+      await apiReset();
+    });
 
-    dtSlider.oninput = () => dtLabel.textContent = dtSlider.value;
-    mSlider.oninput  = () => mLabel.textContent  = mSlider.value;
+    // -----------------------------
+    // Joystick nudge (optional)
+    // -----------------------------
+    function setKnob(nx, ny) {
+      // nx,ny in [-1,1]
+      const r = joystick.getBoundingClientRect();
+      const radius = Math.min(r.width, r.height) * 0.38;
+      const x = nx * radius;
+      const y = ny * radius;
 
-    // Start
-    (async () => {
-      dtLabel.textContent = dtSlider.value;
-      mLabel.textContent = mSlider.value;
-      await getState();
-      await reset();
-      loop();
+      knob.style.left = `calc(50% + ${x}px)`;
+      knob.style.top  = `calc(50% + ${y}px)`;
+    }
+
+    function joystickPointer(evt) {
+      const r = joystick.getBoundingClientRect();
+      const x = evt.clientX - r.left - r.width/2;
+      const y = evt.clientY - r.top - r.height/2;
+      const radius = Math.min(r.width, r.height) * 0.38;
+      const m = Math.max(1e-6, Math.min(radius, Math.sqrt(x*x+y*y)));
+      const nx = x / radius;
+      const ny = y / radius;
+      // clamp to circle
+      const mm = Math.sqrt(nx*nx+ny*ny);
+      const cx = mm > 1 ? nx/mm : nx;
+      const cy = mm > 1 ? ny/mm : ny;
+      return {nx: cx, ny: cy, mag: Math.min(1, mm)};
+    }
+
+    joystick.addEventListener("pointerdown", (evt) => {
+      joyActive = true;
+      joystick.setPointerCapture(evt.pointerId);
+      const j = joystickPointer(evt);
+      joyVec = {x: j.nx, y: j.ny};
+      setKnob(joyVec.x, joyVec.y);
+      joystickMag.textContent = j.mag.toFixed(2);
+    });
+
+    joystick.addEventListener("pointermove", (evt) => {
+      if (!joyActive) return;
+      const j = joystickPointer(evt);
+      joyVec = {x: j.nx, y: j.ny};
+      setKnob(joyVec.x, joyVec.y);
+      joystickMag.textContent = j.mag.toFixed(2);
+    });
+
+    joystick.addEventListener("pointerup", () => {
+      joyActive = false;
+    });
+
+    applyNudgeBtn.addEventListener("click", async () => {
+      if (!state) return;
+      // Convert joystick vector to dv in world (invert y because screen y down)
+      const scale = parseFloat(speedScale.value);
+      const dv = clampDV(joyVec.x * 1.2 * scale, -joyVec.y * 1.2 * scale);
+      if (Math.abs(dv.dvx) < 1e-6 && Math.abs(dv.dvy) < 1e-6) return;
+      await apiPlan(dv.dvx, dv.dvy);
+    });
+
+    // -----------------------------
+    // Main loop
+    // -----------------------------
+    let lastTime = performance.now();
+    async function tick(now) {
+      const elapsed = (now - lastTime) / 1000;
+      lastTime = now;
+
+      if (state) {
+        // step while running
+        if (running && state.hud.status === "running") {
+          // You can step at a fixed dt for consistency
+          try {
+            await apiStep(STEP_DT);
+          } catch (e) {
+            console.error(e);
+            running = false;
+            setStatus("bad", "backend error");
+          }
+        }
+        render();
+      }
+
+      requestAnimationFrame(tick);
+    }
+
+    // -----------------------------
+    // Boot
+    // -----------------------------
+    (async function boot(){
+      scaleLabel.textContent = `${parseFloat(speedScale.value).toFixed(2)}×`;
+      setStatus("wait", "connecting...");
+      try {
+        await apiGetState();
+        await apiReset();
+        setStatus("wait", "ready");
+        requestAnimationFrame(tick);
+      } catch (e) {
+        console.error(e);
+        setStatus("bad", "cannot connect");
+        statusText.textContent = "cannot connect";
+        alert("Could not connect to backend at http://127.0.0.1:5000.\nStart Flask app.py first.");
+      }
     })();
   </script>
 </body>
