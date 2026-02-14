@@ -9,6 +9,16 @@ const stars = Array.from({ length: STAR_COUNT }, () => ({
   a: Math.random() * 0.6 + 0.2,
 }));
 
+const AU_KM = 149_597_870.7;
+
+function remainingDistanceUnits() {
+  const r = sim.state.rocket;
+  const d = sim.state.destination;
+  const dx = d.x - r.x;
+  const dy = d.y - r.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
 function len(x, y) { return Math.sqrt(x * x + y * y); }
 
 function drawStars(canvas, ctx) {
@@ -464,12 +474,18 @@ function drawDestinationAndArrow(canvas, ctx) {
   ctx.fill();
   ctx.restore();
 
-  if (!onScreen) {
-    ctx.fillStyle = `rgba(95, 227, 255, ${opacity})`;
-    ctx.font = "bold 12px monospace";
-    const distKm = Math.floor(distPixels / 10);
-    ctx.fillText(`${distKm}km`, ax - 20, ay + 30);
-  }
+    if (!onScreen) {
+        // Anchor so start distance is exactly 10 AU on display
+        if (sim.initialDistance == null) sim.initialDistance = remainingDistanceUnits();
+
+        const dUnits = remainingDistanceUnits();
+        const dAU = 10.0 * (dUnits / Math.max(1e-6, sim.initialDistance));
+
+        ctx.fillStyle = `rgba(95, 227, 255, ${opacity})`;
+        ctx.font = "bold 12px monospace";
+        ctx.fillText(`${dAU.toFixed(2)} AU`, ax - 28, ay + 30);
+      }
+
 }
 
 function drawJoystickVector(canvas, ctx) {

@@ -73,8 +73,8 @@ def reset_world(seed: Optional[int] = None) -> None:
     rocket = Rocket(
         x=0.0,
         y=0.0,
-        vx=rng.uniform(2.7, 3.6),   # "reasonable initial speed"
-        vy=rng.uniform(-0.8, 0.8),
+        vx=3.0,
+        vy=0.0,
     )
     dest = Destination(
         x=rng.uniform(2400.0, 2900.0),

@@ -2,6 +2,29 @@ import { sim } from "./state.js";
 
 const el = {};
 
+const AU_KM = 149_597_870.7;
+const KM_PER_UNIT = 1_000_000;              // tweak this
+const JOURNEY_SEC_PER_SIM_SEC = 86_400;     // tweak this
+
+function formatJourneyTimeDays(days) {
+  if (days < 60) return `${days.toFixed(1)} d`;
+  const years = days / 365.25;
+  if (years < 2) return `${(days / 30.44).toFixed(1)} mo`;
+  return `${years.toFixed(2)} yr`;
+}
+
+function unitsToKm(units) {
+  return units * KM_PER_UNIT;
+}
+
+function speedUnitsToKmPerSec(vUnitsPerSimSec) {
+  return vUnitsPerSimSec * KM_PER_UNIT / JOURNEY_SEC_PER_SIM_SEC;
+}
+
+function simTimeToDays(tSimSec) {
+  return (tSimSec * JOURNEY_SEC_PER_SIM_SEC) / 86_400;
+}
+
 export function initHUD() {
   el.progressFill = document.getElementById("progressFill");
   el.progressText = document.getElementById("progressText");
@@ -29,23 +52,38 @@ export function setStatus(kind, text) {
 export function updateHUD() {
   if (!sim.state) return;
 
-  const d = sim.state.hud.distance_to_destination;
-  const v = sim.state.hud.speed;
+  const dUnits = sim.state.hud.distance_to_destination;
+  const vUnits = sim.state.hud.speed;
+
+  if (sim.initialDistance == null) sim.initialDistance = dUnits;
+  if (sim.initialSpeed == null) sim.initialSpeed = vUnits;
+
   const p = sim.state.hud.success_probability;
 
-  if (sim.initialDistance == null) sim.initialDistance = d;
-  const prog = clamp(1 - d / Math.max(1e-6, sim.initialDistance), 0, 1);
+  // anchored display targets
+  const START_DISTANCE_AU = 10.0;
+  const START_SPEED_KMS = 30.0;
+
+  // Display conversions
+  const dAU = START_DISTANCE_AU * (dUnits / Math.max(1e-6, sim.initialDistance));
+  const vKmS = START_SPEED_KMS * (vUnits / Math.max(1e-6, sim.initialSpeed));
+  const dKm = dAU * AU_KM;
+  const tDays = simTimeToDays(sim.state.t);
+
+  if (sim.initialDistance == null) sim.initialDistance = dUnits;
+  const prog = clamp(1 - dUnits / Math.max(1e-6, sim.initialDistance), 0, 1);
 
   el.progressFill.style.width = `${(prog * 100).toFixed(1)}%`;
   el.progressText.textContent = `${Math.round(prog * 100)}%`;
 
-  el.speedText.textContent = v.toFixed(2);
   el.probText.textContent = `${Math.round(p * 100)}%`;
-
-  el.distText.textContent = d.toFixed(1);
-  el.speedText2.textContent = v.toFixed(2);
   el.probText2.textContent = `${Math.round(p * 100)}%`;
-  el.timeText.textContent = sim.state.t.toFixed(2);
+
+  el.speedText.textContent = vKmS.toFixed(1);
+  el.speedText2.textContent = vKmS.toFixed(1);
+
+  el.distText.textContent = dKm.toFixed(0);
+  el.timeText.textContent = formatJourneyTimeDays(tDays);
 
   if (sim.state.hud.status === "success") {
     setStatus("good", "success");
