@@ -1,0 +1,86 @@
+:root{
+  --bg:#050506;
+  --panel:#0d0f14;
+  --panel2:#0a0c10;
+  --text:#e8eef7;
+  --muted:#9aa6b2;
+  --accent:#5fe3ff;
+  --good:#6dff57;
+  --bad:#ff4d4d;
+  --unknown:#cfcfcf;
+  --ship:#54f0ff;
+  --stroke:rgba(255,255,255,.16);
+}
+html,body{height:100%; margin:0; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
+.wrap{display:grid; grid-template-columns: 1fr 360px; gap:14px; height:100%; padding:14px; box-sizing:border-box;}
+.stage{position:relative; border:1px solid var(--stroke); border-radius:18px; overflow:hidden; background:radial-gradient(1200px 800px at 40% 40%, rgba(120,160,255,.08), rgba(0,0,0,0) 55%);}
+canvas{width:100%; height:100%; display:block;}
+.hudTop{position:absolute; left:14px; top:14px; display:flex; flex-direction:column; gap:10px; pointer-events:none;}
+.pill{pointer-events:none; display:inline-flex; align-items:center; gap:10px; padding:10px 12px; border-radius:999px; background:rgba(20,24,34,.72); border:1px solid var(--stroke); backdrop-filter: blur(6px); }
+.pill .label{font-size:12px; color:var(--muted); margin-right:6px;}
+.pill .value{font-weight:600; font-size:13px;}
+.progressBar{width:240px; height:10px; border-radius:999px; background:rgba(255,255,255,.10); overflow:hidden; border:1px solid rgba(255,255,255,.12);}
+.progressFill{height:100%; width:0%; background:linear-gradient(90deg, rgba(95,227,255,.95), rgba(109,255,87,.9));}
+.side{
+  border:1px solid var(--stroke);
+  border-radius:18px;
+  background:linear-gradient(180deg, rgba(10,12,16,.92), rgba(10,12,16,.72));
+  padding:14px;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  overflow:auto;
+}
+.card{background:rgba(0,0,0,.25); border:1px solid var(--stroke); border-radius:16px; padding:12px;}
+.row{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+.title{font-weight:700; font-size:14px; letter-spacing:.2px;}
+.sub{font-size:12px; color:var(--muted); margin-top:2px;}
+button{
+  appearance:none;
+  border:1px solid rgba(255,255,255,.16);
+  background:rgba(255,255,255,.06);
+  color:var(--text);
+  padding:10px 12px;
+  border-radius:14px;
+  cursor:pointer;
+  font-weight:650;
+  transition:transform .04s ease, background .15s ease;
+}
+button:hover{background:rgba(255,255,255,.10);}
+button:active{transform:translateY(1px);}
+.primary{background:rgba(95,227,255,.18); border-color:rgba(95,227,255,.35);}
+.primary:hover{background:rgba(95,227,255,.24);}
+.danger{background:rgba(255,77,77,.14); border-color:rgba(255,77,77,.35);}
+.danger:hover{background:rgba(255,77,77,.20);}
+.toggleOn{background:rgba(109,255,87,.16); border-color:rgba(109,255,87,.34);}
+input[type="range"]{width:100%;}
+.kv{display:grid; grid-template-columns: 1fr auto; gap:6px 10px; align-items:center; font-size:13px;}
+.kv .k{color:var(--muted);}
+.kv .v{font-weight:650;}
+.hint{font-size:12px; color:var(--muted); line-height:1.35;}
+.joystick{
+  width:190px; height:190px; border-radius:999px;
+  border:1px solid rgba(95,227,255,.28);
+  background:radial-gradient(closest-side, rgba(95,227,255,.14), rgba(0,0,0,0) 70%);
+  position:relative;
+  margin:10px auto 2px auto;
+  touch-action:none;
+  user-select:none;
+}
+.knob{
+  width:38px; height:38px; border-radius:999px;
+  background:rgba(95,227,255,.85);
+  position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-50%);
+  box-shadow:0 10px 30px rgba(95,227,255,.18);
+}
+.joystickLabel{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-top:6px;}
+.statusPill{display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border-radius:999px; border:1px solid var(--stroke); background:rgba(255,255,255,.05); font-size:12px;}
+.dot{width:8px; height:8px; border-radius:99px; background:rgba(255,255,255,.35);}
+.dot.good{background:var(--good);}
+.dot.bad{background:var(--bad);}
+.dot.run{background:var(--accent);}
+.dot.wait{background:rgba(255,255,255,.35);}
+.footerNote{font-size:12px; color:var(--muted); text-align:center;}
+a{color:var(--accent);}
