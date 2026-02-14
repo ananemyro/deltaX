@@ -11,6 +11,11 @@ def compute_success_probability() -> float:
     Heuristic "probability of success" that reacts to alignment, distance,
     and revealed bad-planet risk. Returns [0,1].
     """
+    status = STATE["status"]
+    if status == "failed":
+        return 0.0
+    if status == "success":
+        return 1.0
     rocket: Rocket = STATE["rocket"]
     dest: Destination = STATE["dest"]
     planets: List[Planet] = STATE["planets"]
