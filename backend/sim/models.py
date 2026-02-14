@@ -17,6 +17,7 @@ class Planet:
     kind: str
     revealed: bool
     recoverable: bool
+    color: str 
 
 @dataclass
 class Destination:

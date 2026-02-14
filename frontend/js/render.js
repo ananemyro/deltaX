@@ -38,6 +38,61 @@ function drawTrail(canvas, ctx) {
   ctx.stroke();
 }
 
+
+
+
+// old version with 'good' and 'bad' 
+// function drawPlanets(canvas, ctx) {
+//   for (const p of sim.state.planets) {
+//     const sp = worldToScreen(canvas, p.x, p.y);
+//     const radius = p.radius * sim.state.camera.zoom;
+
+//     ctx.save();
+//     ctx.translate(sp.x, sp.y);
+
+//     if (p.mass > 2500 || p.color === "green") {
+//       ctx.beginPath();
+//       ctx.ellipse(0, 0, radius * 2.2, radius * 0.8, Math.PI / 6, 0, Math.PI * 2);
+//       ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+//       ctx.lineWidth = 3;
+//       ctx.stroke();
+//     }
+
+//     const grad = ctx.createRadialGradient(-radius/3, -radius/3, radius/10, 0, 0, radius);
+//     if (p.color === "green") { grad.addColorStop(0, "#a2f3a2"); grad.addColorStop(1, "#27ae60"); }
+//     else if (p.color === "red") { grad.addColorStop(0, "#ff7675"); grad.addColorStop(1, "#c0392b"); }
+//     else { grad.addColorStop(0, "#dfe6e9"); grad.addColorStop(1, "#636e72"); }
+
+//     ctx.beginPath();
+//     ctx.arc(0, 0, radius, 0, Math.PI * 2);
+//     ctx.fillStyle = grad;
+//     ctx.fill();
+
+//     ctx.globalAlpha = 0.3;
+//     if (p.color === "red" || p.radius < 40) {
+//       ctx.fillStyle = "rgba(0,0,0,0.2)";
+//       ctx.beginPath(); ctx.arc(-radius/2, radius/4, radius/5, 0, Math.PI*2); ctx.fill();
+//       ctx.beginPath(); ctx.arc(radius/3, -radius/3, radius/6, 0, Math.PI*2); ctx.fill();
+//     } else {
+//       ctx.fillStyle = "white";
+//       ctx.fillRect(-radius, -radius/4, radius*2, radius/2);
+//     }
+//     ctx.globalAlpha = 1.0;
+
+//     ctx.beginPath();
+//     ctx.arc(0, 0, radius + 5, 0, Math.PI * 2);
+//     ctx.strokeStyle = p.color === "green" ? "rgba(46, 204, 113, 0.2)" : "rgba(231, 76, 60, 0.2)";
+//     ctx.lineWidth = 4;
+//     ctx.stroke();
+
+//     ctx.restore();
+//   }
+// }
+
+
+
+
+// version 2: this is the good version, it implements like blue, orange and red 
 function drawPlanets(canvas, ctx) {
   for (const p of sim.state.planets) {
     const sp = worldToScreen(canvas, p.x, p.y);
@@ -46,44 +101,56 @@ function drawPlanets(canvas, ctx) {
     ctx.save();
     ctx.translate(sp.x, sp.y);
 
-    if (p.mass > 2500 || p.color === "green") {
+    // 1. Planetary Rings (Now checking for "good" or large mass)
+    if (p.mass > 2500 || p.status === "good") {
       ctx.beginPath();
       ctx.ellipse(0, 0, radius * 2.2, radius * 0.8, Math.PI / 6, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+      ctx.strokeStyle = "rgba(155, 176, 255, 0.15)";
       ctx.lineWidth = 3;
       ctx.stroke();
     }
 
+    // 2. Dynamic Gradient: This is the magic part!
     const grad = ctx.createRadialGradient(-radius/3, -radius/3, radius/10, 0, 0, radius);
-    if (p.color === "green") { grad.addColorStop(0, "#a2f3a2"); grad.addColorStop(1, "#27ae60"); }
-    else if (p.color === "red") { grad.addColorStop(0, "#ff7675"); grad.addColorStop(1, "#c0392b"); }
-    else { grad.addColorStop(0, "#dfe6e9"); grad.addColorStop(1, "#636e72"); }
+    
+    // Use the exact hex color from Python (p.color) 
+    // We mix it with black at the edge to give it that 3D sphere look
+    grad.addColorStop(0, p.color); 
+    grad.addColorStop(1, "#1a1a1a"); 
 
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0, Math.PI * 2);
     ctx.fillStyle = grad;
     ctx.fill();
 
+    // 3. Surface Details
     ctx.globalAlpha = 0.3;
-    if (p.color === "red" || p.radius < 40) {
+    // Red planets (bad) or small ones get craters
+    if (p.status === "bad" || p.radius < 40) {
       ctx.fillStyle = "rgba(0,0,0,0.2)";
       ctx.beginPath(); ctx.arc(-radius/2, radius/4, radius/5, 0, Math.PI*2); ctx.fill();
       ctx.beginPath(); ctx.arc(radius/3, -radius/3, radius/6, 0, Math.PI*2); ctx.fill();
     } else {
+      // "Good" or "Okay" planets get a reflective shine
       ctx.fillStyle = "white";
       ctx.fillRect(-radius, -radius/4, radius*2, radius/2);
     }
     ctx.globalAlpha = 1.0;
 
+    // 4. Outer Atmosphere Glow
     ctx.beginPath();
     ctx.arc(0, 0, radius + 5, 0, Math.PI * 2);
-    ctx.strokeStyle = p.color === "green" ? "rgba(46, 204, 113, 0.2)" : "rgba(231, 76, 60, 0.2)";
+    // Use the planet's own color with low opacity for the glow
+    ctx.strokeStyle = p.color + "44"; // Adding '44' to the hex makes it transparent
     ctx.lineWidth = 4;
     ctx.stroke();
 
     ctx.restore();
   }
 }
+
+
+
 
 function drawShip(canvas, ctx) {
   const r = sim.state.rocket;

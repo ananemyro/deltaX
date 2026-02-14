@@ -76,28 +76,67 @@ def reset_world(seed: Optional[int] = None) -> None:
                 x=x, y=y,
                 mass=rng.uniform(*GOOD_MASS_RANGE),
                 radius=rng.uniform(*PLANET_RADIUS_RANGE),
-                kind="good",
+                kind="good",         # "Good planets" = blue
                 revealed=False,
+                # revealed=True,      # for debuging 
                 recoverable=True,
+                color = "#9bb0ff"
             )
         )
         pid += 1
 
+
+
+    # for (x, y) in bads:
+    #     # Some bad planets are "too strong" => unrecoverable
+    #     unrecoverable = (rng.random() < 0.35)
+    #     planets.append(
+    #         Planet(
+    #             id=pid,
+    #             x=x, y=y,
+    #             mass=rng.uniform(*BAD_MASS_RANGE) * (1.35 if unrecoverable else 1.0),
+    #             radius=rng.uniform(*PLANET_RADIUS_RANGE) * (1.15 if unrecoverable else 1.0),
+    #             kind="bad",             # "Bad planets" = red
+    #             revealed=False,
+    #             recoverable=not unrecoverable,
+    #             color = "#ff2c2c"
+    #         )
+    #     )
+    #     pid += 1
+
+
     for (x, y) in bads:
-        # Some bad planets are "too strong" => unrecoverable
-        unrecoverable = (rng.random() < 0.35)
+        # 1. Roll to decide if this "bad" spot is LETHAL (bad) or DANGEROUS (okay)
+        is_lethal = rng.random() < 0.40  # 40% are Red, 60% are Orange
+        
+        if is_lethal:
+            p_kind = "bad"
+            p_color = "#ff2c2c" # Red
+            recoverable = False
+            mass_mult = 1.35    # Red stars are heavier
+        else:
+            p_kind = "okay"
+            p_color = "#FF991c" # Orange
+            recoverable = True
+            mass_mult = 1.0     # Orange stars are standard
+
         planets.append(
             Planet(
                 id=pid,
                 x=x, y=y,
-                mass=rng.uniform(*BAD_MASS_RANGE) * (1.35 if unrecoverable else 1.0),
-                radius=rng.uniform(*PLANET_RADIUS_RANGE) * (1.15 if unrecoverable else 1.0),
-                kind="bad",
+                mass=rng.uniform(*BAD_MASS_RANGE) * mass_mult,
+                radius=rng.uniform(*PLANET_RADIUS_RANGE),
+                kind=p_kind,
                 revealed=False,
-                recoverable=not unrecoverable,
+                # revealed=True,      # for debuging 
+                recoverable=recoverable,
+                color=p_color
             )
         )
         pid += 1
+
+
+
 
     # Shuffle positions slightly so good/bad aren't visually patterned
     rng.shuffle(planets)
