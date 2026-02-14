@@ -105,6 +105,8 @@ def reset_world(seed: Optional[int] = None) -> None:
     #     pid += 1
 
 
+
+    # version 3: had initiall all three colors
     for (x, y) in bads:
         # 1. Roll to decide if this "bad" spot is LETHAL (bad) or DANGEROUS (okay)
         is_lethal = rng.random() < 0.40  # 40% are Red, 60% are Orange
@@ -130,6 +132,33 @@ def reset_world(seed: Optional[int] = None) -> None:
                 revealed=False,
                 # revealed=True,      # for debuging 
                 recoverable=recoverable,
+                color=p_color
+            )
+        )
+        pid += 1
+
+
+
+    # version 4: only have blue and ornage planet in the begining 
+    for (x, y) in bads:
+        # All "bad" positions start as "okay" (Orange)
+        p_kind = "okay"
+        p_color = "#FF991c"
+        
+        # 20% chance this orange star is actually a Red Giant/Lethal
+        if rng.random() < 0.20:
+            p_kind = "bad"
+            p_color = "#ff2c2c"
+
+        planets.append(
+            Planet(
+                id=pid,
+                x=x, y=y,
+                mass=rng.uniform(*BAD_MASS_RANGE),
+                radius=rng.uniform(*PLANET_RADIUS_RANGE),
+                kind=p_kind,
+                revealed=False, # Set back to False for gameplay!
+                recoverable=True if p_kind == "okay" else False,
                 color=p_color
             )
         )

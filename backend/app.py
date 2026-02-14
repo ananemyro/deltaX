@@ -52,8 +52,13 @@ def api_plan():
 
     rocket.vx += dvx
     rocket.vy += dvy
+    STATE["latched_planet_id"] = None   # such that the user can fire again, when rocket latches onto orbit
     STATE["last_plan_time"] = t
     return jsonify(state_payload())
+
+
+
+
 
 @app.post("/api/step")
 def api_step():

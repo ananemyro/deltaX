@@ -93,15 +93,88 @@ function drawTrail(canvas, ctx) {
 
 
 // version 2: this is the good version, it implements like blue, orange and red 
+// function drawPlanets(canvas, ctx) {
+//   for (const p of sim.state.planets) {
+//     const sp = worldToScreen(canvas, p.x, p.y);
+//     const radius = p.radius * sim.state.camera.zoom;
+
+//     ctx.save();
+//     ctx.translate(sp.x, sp.y);
+
+//     // 1. Planetary Rings (Now checking for "good" or large mass)
+//     if (p.mass > 2500 || p.status === "good") {
+//       ctx.beginPath();
+//       ctx.ellipse(0, 0, radius * 2.2, radius * 0.8, Math.PI / 6, 0, Math.PI * 2);
+//       ctx.strokeStyle = "rgba(155, 176, 255, 0.15)";
+//       ctx.lineWidth = 3;
+//       ctx.stroke();
+//     }
+
+//     // 2. Dynamic Gradient: This is the magic part!
+//     const grad = ctx.createRadialGradient(-radius/3, -radius/3, radius/10, 0, 0, radius);
+    
+//     // Use the exact hex color from Python (p.color) 
+//     // We mix it with black at the edge to give it that 3D sphere look
+//     grad.addColorStop(0, p.color); 
+//     grad.addColorStop(1, "#1a1a1a"); 
+
+//     ctx.beginPath();
+//     ctx.arc(0, 0, radius, 0, Math.PI * 2);
+//     ctx.fillStyle = grad;
+//     ctx.fill();
+
+//     // 3. Surface Details
+//     ctx.globalAlpha = 0.3;
+//     // Red planets (bad) or small ones get craters
+//     if (p.status === "bad" || p.radius < 40) {
+//       ctx.fillStyle = "rgba(0,0,0,0.2)";
+//       ctx.beginPath(); ctx.arc(-radius/2, radius/4, radius/5, 0, Math.PI*2); ctx.fill();
+//       ctx.beginPath(); ctx.arc(radius/3, -radius/3, radius/6, 0, Math.PI*2); ctx.fill();
+//     } else {
+//       // "Good" or "Okay" planets get a reflective shine
+//       ctx.fillStyle = "white";
+//       ctx.fillRect(-radius, -radius/4, radius*2, radius/2);
+//     }
+//     ctx.globalAlpha = 1.0;
+
+//     // 4. Outer Atmosphere Glow
+//     ctx.beginPath();
+//     ctx.arc(0, 0, radius + 5, 0, Math.PI * 2);
+//     // Use the planet's own color with low opacity for the glow
+//     ctx.strokeStyle = p.color + "44"; // Adding '44' to the hex makes it transparent
+//     ctx.lineWidth = 4;
+//     ctx.stroke();
+
+//     ctx.restore();
+//   }
+// }
+
+
+
+// version3: implementation of atching
 function drawPlanets(canvas, ctx) {
   for (const p of sim.state.planets) {
     const sp = worldToScreen(canvas, p.x, p.y);
-    const radius = p.radius * sim.state.camera.zoom;
+    const zoom = sim.state.camera.zoom;
+    const radius = p.radius * zoom;
+    
+    // Match the "Capture Zone" value from your physics (radius + 40)
+    const orbitRadius = (p.radius + 20.0) * zoom; 
 
     ctx.save();
     ctx.translate(sp.x, sp.y);
 
-    // 1. Planetary Rings (Now checking for "good" or large mass)
+    // --- 1. NEW: Dotted Orbit Line ---
+    // This draws the "hitbox" for the latching mechanic
+    ctx.beginPath();
+    ctx.arc(0, 0, orbitRadius, 0, Math.PI * 2);
+    ctx.setLineDash([5, 8]); // Creates the dotted effect [dash length, gap length]
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.setLineDash([]); // ALWAYS reset this so other lines aren't dotted!
+
+    // 2. Planetary Rings (For "good" or large mass)
     if (p.mass > 2500 || p.status === "good") {
       ctx.beginPath();
       ctx.ellipse(0, 0, radius * 2.2, radius * 0.8, Math.PI / 6, 0, Math.PI * 2);
@@ -110,11 +183,8 @@ function drawPlanets(canvas, ctx) {
       ctx.stroke();
     }
 
-    // 2. Dynamic Gradient: This is the magic part!
+    // 3. Dynamic Gradient (Sphere effect)
     const grad = ctx.createRadialGradient(-radius/3, -radius/3, radius/10, 0, 0, radius);
-    
-    // Use the exact hex color from Python (p.color) 
-    // We mix it with black at the edge to give it that 3D sphere look
     grad.addColorStop(0, p.color); 
     grad.addColorStop(1, "#1a1a1a"); 
 
@@ -123,31 +193,32 @@ function drawPlanets(canvas, ctx) {
     ctx.fillStyle = grad;
     ctx.fill();
 
-    // 3. Surface Details
+    // 4. Surface Details (Craters vs Shine)
     ctx.globalAlpha = 0.3;
-    // Red planets (bad) or small ones get craters
     if (p.status === "bad" || p.radius < 40) {
       ctx.fillStyle = "rgba(0,0,0,0.2)";
       ctx.beginPath(); ctx.arc(-radius/2, radius/4, radius/5, 0, Math.PI*2); ctx.fill();
       ctx.beginPath(); ctx.arc(radius/3, -radius/3, radius/6, 0, Math.PI*2); ctx.fill();
     } else {
-      // "Good" or "Okay" planets get a reflective shine
       ctx.fillStyle = "white";
       ctx.fillRect(-radius, -radius/4, radius*2, radius/2);
     }
     ctx.globalAlpha = 1.0;
 
-    // 4. Outer Atmosphere Glow
+    // 5. Outer Atmosphere / Latch Glow
+    // If the rocket is currently latched to this planet, make it pulse or glow brighter
+    const isLatched = sim.state.latched_planet_id === p.id;
     ctx.beginPath();
     ctx.arc(0, 0, radius + 5, 0, Math.PI * 2);
-    // Use the planet's own color with low opacity for the glow
-    ctx.strokeStyle = p.color + "44"; // Adding '44' to the hex makes it transparent
-    ctx.lineWidth = 4;
+    ctx.strokeStyle = isLatched ? "white" : p.color + "44"; 
+    ctx.lineWidth = isLatched ? 3 : 4;
     ctx.stroke();
 
     ctx.restore();
   }
 }
+
+
 
 
 

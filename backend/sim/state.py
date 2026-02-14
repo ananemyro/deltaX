@@ -12,4 +12,8 @@ STATE: Dict[str, Any] = {
     "fail_reason": None,
     "last_plan_time": -1e9,
     "seed": None,
+
+    "latched_planet_id": None,  # Stores the ID of the planet we are stuck to
+    "countdown": 0.0,           # Timer for 'okay' planets
+
 }
