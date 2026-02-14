@@ -1,3 +1,4 @@
+
 G = 1.0
 SOFTENING_R2 = 25.0
 DT_MIN, DT_MAX = 0.001, 0.05
