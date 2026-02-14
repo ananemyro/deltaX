@@ -33,70 +33,85 @@ def accel_from_planets(rocket: Rocket, planets: List[Planet]) -> Tuple[float, fl
 
 
 
-# version 4: implementation of gravitational assist to slingshot 
+# ------------------
+#   1. Check if you are already in orbit
+#       - if yes, then do the math to keep the rocket orbiting the planet
+#   2. if you are not yet in orbit, then 
+#       - then you need to see if the user was aiming towards the center of the planet, aka GAME OVER
+#
+#   Note: 
+# • CAPTURE_LINE : distance from the center of the planet
+# • CAPTURE_ZONE : 
+# ------------------
+
 def update_reveals_and_collisions(dt: float) -> None:
     rocket: Rocket = STATE["rocket"]
     planets: List[Planet] = STATE["planets"]
     
+    # 1. ORBITING LOGIC
     if STATE.get("latched_planet_id") is not None:
+        # Find the planet we are latched to
+        p = next((p for p in planets if p.id == STATE["latched_planet_id"]), None)
+        if not p: return
 
-        # --- NEW: Orbiting Logic ---
-        p = next(p for p in planets if p.id == STATE["latched_planet_id"])
-        
-
-        # --- NEW: COUNTDOWN LOGIC ---
         if p.kind == "okay":
-            STATE["countdown"] -= dt # Subtract time passed
-            
-            # If time runs out, the planet turns red and explodes
-        if STATE["countdown"] <= 0:
+            STATE["countdown"] -= dt 
+            if STATE["countdown"] <= 0:
                 p.kind = "bad"
-                p.color = "#ff2c2c" # Turn Red
+                p.color = "#ff2c2c"
                 STATE["status"] = "failed"
                 STATE["fail_reason"] = "planet_instability_explosion"
+                return
 
-
-        # 1. Calculate the vector from planet to rocket
+        # Orbital Physics
         dx, dy = rocket.x - p.x, rocket.y - p.y
         r = math.sqrt(dx * dx + dy * dy)
-        
-        # 2. Required velocity for a stable orbit
         orbital_speed = math.sqrt(G * p.mass / r)
+        tx, ty = dy / r, -dx / r # Tangent vector
         
-        # 3. Calculate Tangent Vector (perpendicular to radius)
-        # To go clockwise: (dx, dy) -> (dy, -dx)
-        tx, ty = dy / r, -dx / r
-        
-        # 4. Apply velocity and move rocket along the circle
-        rocket.vx, rocket.vy = tx * orbital_speed, ty * orbital_speed
+        target_vx = tx * orbital_speed
+        target_vy = ty * orbital_speed
+
+        # Smooth blending
+        SMOOTH_FACTOR = 0.1 
+        rocket.vx += (target_vx - rocket.vx) * SMOOTH_FACTOR
+        rocket.vy += (target_vy - rocket.vy) * SMOOTH_FACTOR
+
+        # Radial Correction
+        TARGET_R = p.radius + 20.0
+        r_err = TARGET_R - r
+        rocket.x += (dx / r) * r_err * 0.1
+        rocket.y += (dy / r) * r_err * 0.1
+
         rocket.x += rocket.vx * dt
         rocket.y += rocket.vy * dt
         return
 
+    # 2. CAPTURE & CRASH LOGIC
     for p in planets:
         d = dist((rocket.x, rocket.y), (p.x, p.y))
-        CAPTURE_ZONE = p.radius + 20.0 # Your new tighter radius
+        CAPTURE_ZONE = p.radius + 20.0 
 
-        if not p.revealed and d <= CAPTURE_ZONE:
-            p.revealed = True
-            STATE["latched_planet_id"] = p.id
-            # We don't stop anymore! The logic above takes over next frame.
-            # Initialize timer if we hit an orange planet
-
-            if p.kind == "okay":    # its and orange planet
-                STATE["countdown"] = 10.0   # start the countdown before it turrns red
-            return
-        
-        # CRASH LOGIC
-        # Now this only triggers if the user was "aiming for the center"
-        # and bypassed the capture zone logic (or if planet is already revealed)
+        # A. DEAD CENTER CRASH (Priority)
         if d <= (p.radius * CRASH_RADIUS_FACTOR):
             STATE["status"] = "failed"
             STATE["fail_reason"] = f"crashed_into_{p.id}"
             return
 
-
-
+        # B. LATCH CHECK
+        if not p.revealed and d <= CAPTURE_ZONE:
+            p.revealed = True
+            STATE["latched_planet_id"] = p.id
+            
+            # Snap position to avoid clipping
+            push_x, push_y = (rocket.x - p.x) / d, (rocket.y - p.y) / d
+            rocket.x = p.x + push_x * CAPTURE_ZONE
+            rocket.y = p.y + push_y * CAPTURE_ZONE
+            
+            if p.kind == "okay":
+                STATE["countdown"] = 10.0
+            return
+        
 
 
 
@@ -146,41 +161,87 @@ def step_sim(dt: float) -> None:
 
 
 
+
+# def update_camera() -> None:
+#     rocket: Rocket = STATE["rocket"]
+#     cam: Camera = STATE["camera"]
+
+#     # 1. Check if we are currently latched
+#     is_latched = STATE.get("latched_planet_id") is not None
+
+#     vx, vy = rocket.vx, rocket.vy
+#     speed = math.hypot(vx, vy)
+
+#     # 2. Adjust Lookahead
+#     # If flying: Look ahead by 220 units. 
+#     # If latched: Set to 0 so the camera centers on the rocket/planet.
+#     MAX_AHEAD = 0.0 if is_latched else 220.0
+
+#     if speed > 1e-6:
+#         ux, uy = vx / speed, vy / speed
+#     else:
+#         ux, uy = 0.0, 0.0
+
+#     ahead = min(MAX_AHEAD, 6.0 * speed)
+#     target_x = rocket.x + ux * ahead
+#     target_y = rocket.y + uy * ahead
+
+#     # 3. Dynamic Smoothing (Alpha)
+#     # If latched, we use a much smaller alpha (0.03) to make the camera 
+#     # "drift" slowly into position rather than snapping.
+#     alpha = 0.03 if is_latched else CAM_ALPHA 
+    
+#     cam.cx += (target_x - cam.cx) * alpha
+#     cam.cy += (target_y - cam.cy) * alpha
+
+#     # 4. Remove or increase the "Safety Snap"
+#     # The safety snap usually causes the biggest "jerk"
+#     SNAP_DIST = 800.0 # Increase this so it doesn't trigger during smooth orbits
+#     dx = rocket.x - cam.cx
+#     dy = rocket.y - cam.cy
+#     if (dx * dx + dy * dy) > (SNAP_DIST * SNAP_DIST):
+#         cam.cx = rocket.x
+#         cam.cy = rocket.y
+
+
+
 def update_camera() -> None:
     rocket: Rocket = STATE["rocket"]
     cam: Camera = STATE["camera"]
 
-    # Current speed
-    vx, vy = rocket.vx, rocket.vy
-    speed = math.hypot(vx, vy)
+    latched_id = STATE.get("latched_planet_id")
+    is_latched = latched_id is not None
 
-    # --- LOOKAHEAD: cap how far ahead we look in WORLD units ---
-    # Max lookahead distance in world coords (tune 120..400)
-    MAX_AHEAD = 220.0
-
-    if speed > 1e-6:
-        ux, uy = vx / speed, vy / speed
+    if is_latched:
+        # Find the planet we are stuck to
+        p = next(p for p in STATE["planets"] if p.id == latched_id)
+        # The camera's goal is now the planet's center, not the moving rocket
+        target_x, target_y = p.x, p.y
+        # Use a very firm alpha so it settles quickly and stays there
+        alpha = 0.05 
     else:
-        ux, uy = 0.0, 0.0
+        # Standard flying logic
+        vx, vy = rocket.vx, rocket.vy
+        speed = math.hypot(vx, vy)
+        
+        # Keep your lookahead logic for flight
+        MAX_AHEAD = 220.0
+        ux, uy = (vx / speed, vy / speed) if speed > 1e-6 else (0.0, 0.0)
+        ahead = min(MAX_AHEAD, 6.0 * speed)
+        
+        target_x = rocket.x + ux * ahead
+        target_y = rocket.y + uy * ahead
+        alpha = CAM_ALPHA
 
-    # Map speed to ahead distance, but cap it hard
-    # (tune the 6.0 to change how quickly it reaches MAX_AHEAD)
-    ahead = min(MAX_AHEAD, 6.0 * speed)
-
-    target_x = rocket.x + ux * ahead
-    target_y = rocket.y + uy * ahead
-
-    # --- SMOOTHING: keep it stable ---
-    # With DV_MAX=60 you generally want strong follow
-    alpha = CAM_ALPHA  # keep your config value
+    # Apply the movement
     cam.cx += (target_x - cam.cx) * alpha
     cam.cy += (target_y - cam.cy) * alpha
 
-    # --- SAFETY SNAP: if rocket would be off-screen, snap to rocket ---
-    # This uses a world-distance threshold (tune 350..800 depending on zoom/scale)
-    SNAP_DIST = 500.0
-    dx = rocket.x - cam.cx
-    dy = rocket.y - cam.cy
-    if (dx * dx + dy * dy) > (SNAP_DIST * SNAP_DIST):
-        cam.cx = rocket.x
-        cam.cy = rocket.y
+    # --- SAFETY: Disable the "Safety Snap" when latched ---
+    if not is_latched:
+        SNAP_DIST = 800.0
+        dx = rocket.x - cam.cx
+        dy = rocket.y - cam.cy
+        if (dx * dx + dy * dy) > (SNAP_DIST * SNAP_DIST):
+            cam.cx = rocket.x
+            cam.cy = rocket.y
