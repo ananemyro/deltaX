@@ -43,17 +43,11 @@ export function updateRenderCamera() {
   if (!sim.state) return;
 
   const r = sim.state.rocket;
-  const z = (sim.state.camera && sim.state.camera.zoom) ? sim.state.camera.zoom : 1.0;
-  sim.renderCam.zoom = z;
 
-  const tx = r.x + r.vx * LOOKAHEAD_UI;
-  const ty = r.y + r.vy * LOOKAHEAD_UI;
+  // Use backend camera directly
+  const cam = sim.state.camera || { cx: r.x, cy: r.y, zoom: 1.0 };
 
-  if (!Number.isFinite(sim.renderCam.cx)) {
-    sim.renderCam.cx = r.x;
-    sim.renderCam.cy = r.y;
-  }
-
-  sim.renderCam.cx += (tx - sim.renderCam.cx) * CAM_ALPHA_UI;
-  sim.renderCam.cy += (ty - sim.renderCam.cy) * CAM_ALPHA_UI;
+  sim.renderCam.cx = cam.cx;
+  sim.renderCam.cy = cam.cy;
+  sim.renderCam.zoom = cam.zoom || 1.0;
 }

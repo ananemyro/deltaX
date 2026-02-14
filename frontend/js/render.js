@@ -248,7 +248,7 @@ function drawJoystickVector(canvas, ctx) {
   const ship = worldToScreen(canvas, r.x, r.y);
 
   const arrowPx = 110 * Math.min(1, len(sim.joyVec.x, sim.joyVec.y));
-  const vx = sim.joyVec.x;
+  const vx = -sim.joyVec.x;
   const vy = -sim.joyVec.y;
 
   const end = { x: ship.x + vx * arrowPx, y: ship.y + vy * arrowPx };

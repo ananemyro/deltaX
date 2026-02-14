@@ -66,8 +66,8 @@ export function initInput() {
 
     const mag = Math.min(1.0, Math.sqrt(sim.joyVec.x * sim.joyVec.x + sim.joyVec.y * sim.joyVec.y));
 
-    let dvx = sim.joyVec.x * JOY_GAIN * mag;
-    let dvy = -sim.joyVec.y * JOY_GAIN * mag;
+    let dvx = -sim.joyVec.x * JOY_GAIN * mag;
+    let dvy = sim.joyVec.y * JOY_GAIN * mag;
 
     const m = Math.sqrt(dvx * dvx + dvy * dvy);
     if (m > JOY_DV_MAX) {
