@@ -33,161 +33,6 @@ def accel_from_planets(rocket: Rocket, planets: List[Planet]) -> Tuple[float, fl
 
 
 
-
-# version1: rocket doenst stop yet
-# def update_reveals_and_collisions() -> None:
-#     rocket: Rocket = STATE["rocket"]
-#     planets: List[Planet] = STATE["planets"]
-#     rx, ry = rocket.x, rocket.y
-
-#     for p in planets:
-#         d = dist((rx, ry), (p.x, p.y))
-
-#         # Reveal on approach
-#         if not p.revealed and d <= (p.radius + REVEAL_MARGIN):
-#             p.revealed = True
-
-#         # Crash into any planet (simple rule)
-#         if d <= (p.radius * CRASH_RADIUS_FACTOR):
-#             STATE["status"] = "failed"
-#             STATE["fail_reason"] = f"crashed_into_planet_{p.id}"
-#             return
-
-#         # Unrecoverable bad planet death-zone
-#         if p.kind == "bad" and (not p.recoverable):
-#             if d <= (p.radius * DEATH_RADIUS_FACTOR):
-#                 STATE["status"] = "failed"
-#                 STATE["fail_reason"] = f"overwhelmed_by_gravity_{p.id}"
-#                 return
-
-
-
-
-# Version 2: implementation of latching, not working, it just directly crahsing 
-# def update_reveals_and_collisions(dt: float) -> None:
-#     rocket: Rocket = STATE["rocket"]
-#     planets: List[Planet] = STATE["planets"]
-#     rx, ry = rocket.x, rocket.y
-
-#     # --- 1. HANDLE EXISTING LATCH ---
-#     if STATE.get("latched_planet_id") is not None:
-#         # Find the planet we are stuck to
-#         p = next((p for p in planets if p.id == STATE["latched_planet_id"]), None)
-#         if p:
-#             # Lock rocket to planet center
-#             rocket.x, rocket.y = p.x, p.y
-#             rocket.vx, rocket.vy = 0.0, 0.0 
-            
-#             # If it's "okay" (Orange), tick the timer
-#             if p.kind == "okay":
-#                 STATE["countdown"] -= dt
-#                 if STATE["countdown"] <= 0:
-#                     STATE["status"] = "failed"
-#                     STATE["fail_reason"] = "planet_instability_explosion"
-#         return
-
-#     # --- 2. CHECK FOR NEW LATCHES & COLLISIONS ---
-#     for p in planets:
-#         d = dist((rx, ry), (p.x, p.y))
-
-#         # NEW: Latch on approach (Reveal Margin = Orbital Radius)
-#         if not p.revealed and d <= (p.radius + REVEAL_MARGIN):
-#             p.revealed = True
-#             STATE["latched_planet_id"] = p.id
-            
-#             # Stop the rocket immediately
-#             rocket.vx, rocket.vy = 0.0, 0.0
-#             rocket.x, rocket.y = p.x, p.y
-            
-#             # Start timer if orange
-#             if p.kind == "okay":
-#                 STATE["countdown"] = 10.0
-#             return
-
-#         # Crash logic (only for revealed planets)
-#         if d <= (p.radius * CRASH_RADIUS_FACTOR):
-#             STATE["status"] = "failed"
-#             STATE["fail_reason"] = f"crashed_into_planet_{p.id}"
-#             return
-
-#         # Death zone logic
-#         if p.kind == "bad" and (not p.recoverable):
-#             if d <= (p.radius * DEATH_RADIUS_FACTOR):
-#                 STATE["status"] = "failed"
-#                 STATE["fail_reason"] = f"overwhelmed_by_gravity_{p.id}"
-#                 return
-
-# version 3: still latching onto the center
-# def update_reveals_and_collisions(dt: float) -> None:
-#     rocket: Rocket = STATE["rocket"]
-#     planets: List[Planet] = STATE["planets"]
-    
-#     # 1. If already latched, keep us frozen
-#     if STATE.get("latched_planet_id") is not None:
-#         p = next((p for p in planets if p.id == STATE["latched_planet_id"]), None)
-#         if p:
-#             rocket.x, rocket.y = p.x, p.y
-#             rocket.vx, rocket.vy = 0.0, 0.0
-#         return
-
-#     # 2. Check for new captures
-#     for p in planets:
-#         d = dist((rocket.x, rocket.y), (p.x, p.y))
-        
-#         # THE CAPTURE ZONE (Arbitrary value: 120 units)
-#         CAPTURE_DISTANCE = p.radius + 120.0
-
-#         if not p.revealed and d <= CAPTURE_DISTANCE:
-#             # LATCH IMMEDIATELY
-#             p.revealed = True
-#             STATE["latched_planet_id"] = p.id
-            
-#             # KILL PHYSICS
-#             rocket.vx, rocket.vy = 0.0, 0.0
-#             rocket.x, rocket.y = p.x, p.y # Snap to center
-#             return # Stop checking other planets this frame
-
-#         # THE CRASH ZONE (Only if already revealed and we got too close)
-#         if d <= (p.radius * CRASH_RADIUS_FACTOR):
-#             STATE["status"] = "failed"
-#             STATE["fail_reason"] = f"crashed_into_{p.id}"
-#             return
-
-# version 4: last working model, USE THIS ONE!
-# def update_reveals_and_collisions(dt: float) -> None:
-#     rocket: Rocket = STATE["rocket"]
-#     planets: List[Planet] = STATE["planets"]
-    
-#     # 1. If already latched, stay frozen exactly where we are
-#     if STATE.get("latched_planet_id") is not None:
-#         rocket.vx, rocket.vy = 0.0, 0.0
-#         return
-
-#     # 2. Check for new captures
-#     for p in planets:
-#         d = dist((rocket.x, rocket.y), (p.x, p.y))
-        
-#         CAPTURE_ZONE = p.radius + 20.0      # establich the orbital zone at which the rocket can "latch onto"
-
-#         # LATCH ON THE EDGE
-#         if not p.revealed and d <= CAPTURE_ZONE:
-#             p.revealed = True
-#             STATE["latched_planet_id"] = p.id
-            
-#             # STOP IMMEDIATELY at the current position (the edge)
-#             rocket.vx, rocket.vy = 0.0, 0.0
-            
-#             # Remove the line that sets rocket.x/y to p.x/y!
-#             return 
-
-#         # CRASH LOGIC
-#         # Now this only triggers if the user was "aiming for the center"
-#         # and bypassed the capture zone logic (or if planet is already revealed)
-#         if d <= (p.radius * CRASH_RADIUS_FACTOR):
-#             STATE["status"] = "failed"
-#             STATE["fail_reason"] = f"crashed_into_{p.id}"
-#             return
-
 # version 4: implementation of gravitational assist to slingshot 
 def update_reveals_and_collisions(dt: float) -> None:
     rocket: Rocket = STATE["rocket"]
@@ -204,9 +49,9 @@ def update_reveals_and_collisions(dt: float) -> None:
             STATE["countdown"] -= dt # Subtract time passed
             
             # If time runs out, the planet turns red and explodes
-            if STATE["countdown"] <= 0:
+        if STATE["countdown"] <= 0:
                 p.kind = "bad"
-                p.color = "#ff2c2c"
+                p.color = "#ff2c2c" # Turn Red
                 STATE["status"] = "failed"
                 STATE["fail_reason"] = "planet_instability_explosion"
 
@@ -236,7 +81,11 @@ def update_reveals_and_collisions(dt: float) -> None:
             p.revealed = True
             STATE["latched_planet_id"] = p.id
             # We don't stop anymore! The logic above takes over next frame.
-            return 
+            # Initialize timer if we hit an orange planet
+
+            if p.kind == "okay":    # its and orange planet
+                STATE["countdown"] = 10.0   # start the countdown before it turrns red
+            return
         
         # CRASH LOGIC
         # Now this only triggers if the user was "aiming for the center"
@@ -268,59 +117,6 @@ def check_success_and_bounds() -> None:
         return
 
 
-
-# old version ; rocket doesnt latch 
-# def step_sim(dt: float) -> None:
-#     if STATE["status"] != "running":
-#         return
-
-#     rocket: Rocket = STATE["rocket"]
-#     planets: List[Planet] = STATE["planets"]
-
-#     ax, ay = accel_from_planets(rocket, planets)
-
-#     # Semi-implicit Euler (good stability for games)
-#     rocket.vx += ax * dt
-#     rocket.vy += ay * dt
-#     rocket.x += rocket.vx * dt
-#     rocket.y += rocket.vy * dt
-
-#     STATE["t"] += dt
-
-#     update_reveals_and_collisions()
-#     if STATE["status"] == "running":
-#         check_success_and_bounds()
-
-#     update_camera()
-
-
-
-# Version2: this version is working trying to implement latching 
-# def step_sim(dt: float) -> None:
-#     if STATE["status"] != "running":
-#         return
-
-#     # Pass dt to update_reveals_and_collisions for the timer
-#     update_reveals_and_collisions(dt)
-    
-#     # Only move the rocket if we aren't latched
-#     if STATE.get("latched_planet_id") is None:
-#         rocket: Rocket = STATE["rocket"]
-#         planets: List[Planet] = STATE["planets"]
-
-#         ax, ay = accel_from_planets(rocket, planets)
-
-#         rocket.vx += ax * dt
-#         rocket.vy += ay * dt
-#         rocket.x += rocket.vx * dt
-#         rocket.y += rocket.vy * dt
-
-#     STATE["t"] += dt
-
-#     if STATE["status"] == "running":
-#         check_success_and_bounds()
-
-#     update_camera()
 
 
 
