@@ -90,146 +90,47 @@ def reset_world(seed: Optional[int] = None) -> None:
     pid = 1
 
 
-    # version 5: last good version
-    # for (x, y) in goods:
-    #     planets.append(
-    #         Planet(
-    #             id=pid,
-    #             x=x, y=y,
-    #             mass=rng.uniform(*GOOD_MASS_RANGE),
-    #             radius=rng.uniform(*PLANET_RADIUS_RANGE),
-    #             kind="good",         # "Good planets" = blue
-    #             revealed=False,
-    #             # revealed=True,      # for debuging 
-    #             recoverable=True,
-    #             color = "#9bb0ff"
-    #         )
-    #     )
-    #     pid += 1
-
-
-
-    # for (x, y) in bads:
-    #     # Some bad planets are "too strong" => unrecoverable
-    #     unrecoverable = (rng.random() < 0.35)
-    #     planets.append(
-    #         Planet(
-    #             id=pid,
-    #             x=x, y=y,
-    #             mass=rng.uniform(*BAD_MASS_RANGE) * (1.35 if unrecoverable else 1.0),
-    #             radius=rng.uniform(*PLANET_RADIUS_RANGE) * (1.15 if unrecoverable else 1.0),
-    #             kind="bad",             # "Bad planets" = red
-    #             revealed=False,
-    #             recoverable=not unrecoverable,
-    #             color = "#ff2c2c"
-    #         )
-    #     )
-    #     pid += 1
-
-
-
-    # version 3: had initiall all three colors
-    # for (x, y) in bads:
-    #     # 1. Roll to decide if this "bad" spot is LETHAL (bad) or DANGEROUS (okay)
-    #     is_lethal = rng.random() < 0.40  # 40% are Red, 60% are Orange
-        
-    #     if is_lethal:
-    #         p_kind = "bad"
-    #         p_color = "#ff2c2c" # Red
-    #         recoverable = False
-    #         mass_mult = 1.35    # Red stars are heavier
-    #     else:
-    #         p_kind = "okay"
-    #         p_color = "#FF991c" # Orange
-    #         recoverable = True
-    #         mass_mult = 1.0     # Orange stars are standard
-
-    #     planets.append(
-    #         Planet(
-    #             id=pid,
-    #             x=x, y=y,
-    #             mass=rng.uniform(*BAD_MASS_RANGE) * mass_mult,
-    #             radius=rng.uniform(*PLANET_RADIUS_RANGE),
-    #             kind=p_kind,
-    #             revealed=False,
-    #             # revealed=True,      # for debuging 
-    #             recoverable=recoverable,
-    #             color=p_color
-    #         )
-    #     )
-    #     pid += 1
-
-
-
-    # version 4: Last good version  only have blue and ornage planet in the begining 
-    # for (x, y) in bads:
-    #     # All "bad" positions start as "okay" (Orange)
-    #     p_kind = "okay"
-    #     p_color = "#FF991c"
-        
-    #     # 20% chance this orange star is actually a Red Giant/Lethal
-    #     if rng.random() < 0.20:
-    #         p_kind = "bad"
-    #         p_color = "#ff2c2c"
-
-    #     planets.append(
-    #         Planet(
-    #             id=pid,     # assign the id's to planet, to keep track of them
-    #             x=x, y=y,
-    #             mass=rng.uniform(*BAD_MASS_RANGE),
-    #             radius=rng.uniform(*PLANET_RADIUS_RANGE),
-    #             kind=p_kind,
-    #             revealed=False, # Set back to False for gameplay!
-    #             recoverable=True if p_kind == "okay" else False,
-    #             color=p_color
-    #         )
-    #     )
-    #     pid += 1    # new id for each planet generated
-
-
     for coords, is_good_pass in [(goods, True), (bads, False)]:
-            for (x, y) in coords:
-                p_radius = rng.uniform(*PLANET_RADIUS_RANGE)
+        for (x, y) in coords:
+            p_radius = rng.uniform(*PLANET_RADIUS_RANGE)
+            
+            # Find a free spot using Jitter (Attempt up to 15 times)
+            placed_x, placed_y = x, y
+            found_spot = False
+            
+            for attempt in range(15):
+                # If first try fails, move the x,y randomly within a 150-unit box
+                test_x = x + (rng.uniform(-150, 150) if attempt > 0 else 0)
+                test_y = y + (rng.uniform(-150, 150) if attempt > 0 else 0)
                 
-                # Find a free spot using Jitter (Attempt up to 15 times)
-                placed_x, placed_y = x, y
-                found_spot = False
-                
-                for attempt in range(15):
-                    # If first try fails, move the x,y randomly within a 150-unit box
-                    test_x = x + (rng.uniform(-150, 150) if attempt > 0 else 0)
-                    test_y = y + (rng.uniform(-150, 150) if attempt > 0 else 0)
-                    
-                    if is_space_free(test_x, test_y, p_radius, planets):
-                        placed_x, placed_y = test_x, test_y
-                        found_spot = True
-                        break
-                
-                if not found_spot:
-                    continue # Skip this planet if no room is found
+                if is_space_free(test_x, test_y, p_radius, planets):
+                    placed_x, placed_y = test_x, test_y
+                    found_spot = True
+                    break
+            
+            if not found_spot:
+                continue # Skip this planet if no room is found
 
-                # 5. Define Planet Properties
-                if is_good_pass:
-                    # Always Blue
-                    p_kind, p_color, p_recoverable = "good", "#9bb0ff", True
-                    p_mass = rng.uniform(*GOOD_MASS_RANGE)
-                else:
-                    # Orange planets (20% chance of being secretly Red)
-                    is_red = rng.random() < 0.20
-                    p_kind = "bad" if is_red else "okay"
-                    p_color = "#ff2c2c" if is_red else "#FF991c"
-                    p_recoverable = not is_red
-                    p_mass = rng.uniform(*BAD_MASS_RANGE)
+            # 5. Define Planet Properties
+            if is_good_pass:
+                # its a  Blue planet
+                p_kind, p_color, p_recoverable = "good", "#9bb0ff", True
+                p_mass = rng.uniform(*GOOD_MASS_RANGE)
+            else:
+                # Orange: The Ticking Time Bomb
+                p_kind, p_color, p_recoverable = "okay", "#FF991c", True
+                p_mass = rng.uniform(*BAD_MASS_RANGE)
 
-                # 6. Add to list and increment pid
-                planets.append(
-                    Planet(
-                        id=pid, x=placed_x, y=placed_y, mass=p_mass,
-                        radius=p_radius, kind=p_kind, revealed=False,
-                        recoverable=p_recoverable, color=p_color
-                    )
+
+            # 6. Add to list and increment pid
+            planets.append(
+                Planet(
+                    id=pid, x=placed_x, y=placed_y, mass=p_mass,
+                    radius=p_radius, kind=p_kind, revealed=False,
+                    recoverable=p_recoverable, color=p_color
                 )
-                pid += 1
+            )
+            pid += 1
 
 
 
