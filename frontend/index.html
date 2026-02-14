@@ -418,6 +418,11 @@
       }
     }
 
+
+
+
+
+
     // -----------------------------
     // Drawing
     // -----------------------------
@@ -433,6 +438,9 @@
       }
     }
 
+
+
+
     function drawTrail() {
       if (!state || trail.length < 2) return;
       ctx.beginPath();
@@ -447,69 +455,382 @@
       ctx.stroke();
     }
 
+
+
+    // version 0
+    // function drawPlanets() {
+    //   for (const p of state.planets) {
+    //     const sp = worldToScreen(p.x, p.y);
+
+    //     // Planet body
+    //     ctx.beginPath();
+    //     ctx.arc(sp.x, sp.y, p.radius * state.camera.zoom, 0, Math.PI*2);
+
+    //     let fill = "rgba(207,207,207,0.85)";
+    //     if (p.color === "green") fill = "rgba(109,255,87,0.90)";
+    //     if (p.color === "red")   fill = "rgba(255,77,77,0.90)";
+
+    //     ctx.fillStyle = fill;
+    //     ctx.fill();
+
+    //     // subtle ring
+    //     ctx.beginPath();
+    //     ctx.arc(sp.x, sp.y, (p.radius * state.camera.zoom) + 6, 0, Math.PI*2);
+    //     ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    //     ctx.lineWidth = 2;
+    //     ctx.stroke();
+
+    //     // If revealed bad & unrecoverable, add warning halo
+    //     if (p.revealed && p.status === "bad" && !p.recoverable) {
+    //       ctx.beginPath();
+    //       ctx.arc(sp.x, sp.y, (p.radius * state.camera.zoom) + 14, 0, Math.PI*2);
+    //       ctx.strokeStyle = "rgba(255,77,77,0.22)";
+    //       ctx.lineWidth = 6;
+    //       ctx.stroke();
+    //     }
+    //   }
+    // }
+
+
+
     function drawPlanets() {
-      for (const p of state.planets) {
-        const sp = worldToScreen(p.x, p.y);
+  for (const p of state.planets) {
+    const sp = worldToScreen(p.x, p.y);
+    const radius = p.radius * state.camera.zoom;
 
-        // Planet body
-        ctx.beginPath();
-        ctx.arc(sp.x, sp.y, p.radius * state.camera.zoom, 0, Math.PI*2);
+    ctx.save();
+    ctx.translate(sp.x, sp.y);
 
-        let fill = "rgba(207,207,207,0.85)";
-        if (p.color === "green") fill = "rgba(109,255,87,0.90)";
-        if (p.color === "red")   fill = "rgba(255,77,77,0.90)";
-
-        ctx.fillStyle = fill;
-        ctx.fill();
-
-        // subtle ring
-        ctx.beginPath();
-        ctx.arc(sp.x, sp.y, (p.radius * state.camera.zoom) + 6, 0, Math.PI*2);
-        ctx.strokeStyle = "rgba(255,255,255,0.08)";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // If revealed bad & unrecoverable, add warning halo
-        if (p.revealed && p.status === "bad" && !p.recoverable) {
-          ctx.beginPath();
-          ctx.arc(sp.x, sp.y, (p.radius * state.camera.zoom) + 14, 0, Math.PI*2);
-          ctx.strokeStyle = "rgba(255,77,77,0.22)";
-          ctx.lineWidth = 6;
-          ctx.stroke();
-        }
-      }
+    // 1. Draw Rings for Large Planets (Gas Giants)
+    if (p.mass > 2500 || p.color === "green") {
+      ctx.beginPath();
+      ctx.ellipse(0, 0, radius * 2.2, radius * 0.8, Math.PI / 6, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+      ctx.lineWidth = 3;
+      ctx.stroke();
     }
 
+    // 2. Planet Body Gradient (Makes it look like a sphere)
+    const grad = ctx.createRadialGradient(-radius/3, -radius/3, radius/10, 0, 0, radius);
+    if (p.color === "green") {
+      grad.addColorStop(0, "#a2f3a2"); // Highlight
+      grad.addColorStop(1, "#27ae60"); // Shadow
+    } else if (p.color === "red") {
+      grad.addColorStop(0, "#ff7675");
+      grad.addColorStop(1, "#c0392b");
+    } else {
+      grad.addColorStop(0, "#dfe6e9");
+      grad.addColorStop(1, "#636e72");
+    }
+
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // 3. Add Details (Craters for small/red planets, Clouds for green)
+    ctx.globalAlpha = 0.3;
+    if (p.color === "red" || p.radius < 40) {
+      // Draw 3 random craters
+      ctx.fillStyle = "rgba(0,0,0,0.2)";
+      ctx.beginPath(); ctx.arc(-radius/2, radius/4, radius/5, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(radius/3, -radius/3, radius/6, 0, Math.PI*2); ctx.fill();
+    } else {
+      // Draw a "cloud band" across the middle
+      ctx.fillStyle = "white";
+      ctx.fillRect(-radius, -radius/4, radius*2, radius/2);
+    }
+    ctx.globalAlpha = 1.0;
+
+    // 4. Atmosphere Glow
+    ctx.beginPath();
+    ctx.arc(0, 0, radius + 5, 0, Math.PI * 2);
+    ctx.strokeStyle = p.color === "green" ? "rgba(46, 204, 113, 0.2)" : "rgba(231, 76, 60, 0.2)";
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+}
+
+
+
+
+
+
+
+
+
+    // function drawShip() {
+    //   const r = state.rocket;
+    //   const sp = worldToScreen(r.x, r.y);
+
+    //   // ship as diamond
+    //   ctx.save();
+    //   ctx.translate(sp.x, sp.y);
+
+    //   const ang = Math.atan2(r.vy, r.vx);
+    //   ctx.rotate(-ang); // screen y down, our world y up -> rotate opposite for nicer feel
+
+    //   ctx.beginPath();
+    //   ctx.moveTo(0, -SHIP_SIZE);
+    //   ctx.lineTo(SHIP_SIZE*1.3, 0);
+    //   ctx.lineTo(0, SHIP_SIZE);
+    //   ctx.lineTo(-SHIP_SIZE*1.3, 0);
+    //   ctx.closePath();
+    //   ctx.fillStyle = "rgba(84,240,255,0.92)";
+    //   ctx.fill();
+
+    //   ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    //   ctx.lineWidth = 2;
+    //   ctx.stroke();
+    //   ctx.restore();
+
+    //   // label like sketch
+    //   ctx.fillStyle = "rgba(255,255,255,0.8)";
+    //   ctx.font = "12px system-ui, sans-serif";
+    //   ctx.fillText("your ship", sp.x + 10, sp.y - 10);
+    // }
+
+    // function drawShip(targetState, color, isGhost = false) {
+
+
+    //   const r = state.rocket;
+    //   const sp = worldToScreen(r.x, r.y);
+
+    //   ctx.save();
+    //   ctx.translate(sp.x, sp.y);
+
+    //   // This rotates the ship to face the direction it is moving
+    //   const ang = Math.atan2(r.vy, r.vx);
+    //   ctx.rotate(-ang); 
+
+    //   ctx.beginPath();
+    //   // Drawing the Rocket Body and Fins
+    //   ctx.moveTo(15, 0);           // Nose cone (Front)
+    //   ctx.lineTo(-5, -8);          // Body top
+    //   ctx.lineTo(-12, -12);        // Top fin
+    //   ctx.lineTo(-8, 0);           // Engine bell (Back center)
+    //   ctx.lineTo(-12, 12);         // Bottom fin
+    //   ctx.lineTo(-5, 8);           // Body bottom
+    //   ctx.closePath();
+
+    //   // Styling the ship with a cyan glow
+    //   ctx.fillStyle = "rgba(84,240,255,0.92)";
+    //   ctx.fill();
+
+    //   // Adding a subtle border
+    //   ctx.strokeStyle = "rgba(255,255,255,0.15)";
+    //   ctx.lineWidth = 1.5;
+    //   ctx.stroke();
+  
+    //   ctx.restore();
+
+    //   // Label as per your original design
+    //   ctx.fillStyle = "rgba(255,255,255,0.8)";
+    //   ctx.font = "12px system-ui, sans-serif";
+    //   ctx.fillText("your ship", sp.x + 10, sp.y - 10);
+    // }
+
+
+
+
+
+
+
+    // Version 1: edgy version
+    // function drawShip() {
+    //   const r = state.rocket;
+    //   const sp = worldToScreen(r.x, r.y);
+
+    //   ctx.save();
+    //   ctx.translate(sp.x, sp.y);
+
+    //   // Rotate rocket to face velocity direction
+    //   const ang = Math.atan2(r.vy, r.vx);
+    //   ctx.rotate(-ang);
+
+    //   const scale = 1.2; // overall rocket size
+    //   const bodyLength = 26 * scale;
+    //   const bodyWidth = 10 * scale;
+    //   const finSize = 10 * scale;
+
+    //   // --------------------
+    //   // Rocket Body
+    //   // --------------------
+    //   ctx.beginPath();
+
+    //   // Nose tip
+    //   ctx.moveTo(bodyLength / 2, 0);
+
+    //   // Top body curve
+    //   ctx.quadraticCurveTo(0, -bodyWidth * 1.2, -bodyLength / 2.5, -bodyWidth / 2);
+
+    //   // Bottom body curve
+    //   ctx.quadraticCurveTo(0, bodyWidth * 1.2, bodyLength / 2, 0);
+
+    //   ctx.closePath();
+    //   ctx.fillStyle = "rgba(220, 230, 255, 0.95)";
+    //   ctx.fill();
+
+    //   // --------------------
+    //   // Fins
+    //   // --------------------
+    //   ctx.beginPath();
+    //   ctx.moveTo(-bodyLength / 3, -bodyWidth / 2);
+    //   ctx.lineTo(-bodyLength / 2.2, -bodyWidth / 2 - finSize);
+    //   ctx.lineTo(-bodyLength / 4, -bodyWidth / 2);
+    //   ctx.closePath();
+
+    //   ctx.moveTo(-bodyLength / 3, bodyWidth / 2);
+    //   ctx.lineTo(-bodyLength / 2.2, bodyWidth / 2 + finSize);
+    //   ctx.lineTo(-bodyLength / 4, bodyWidth / 2);
+    //   ctx.closePath();
+
+    //   ctx.fillStyle = "rgba(255, 80, 80, 0.9)";
+    //   ctx.fill();
+
+    //   // --------------------
+    //   // Engine Flame (if moving)
+    //   // --------------------
+    //   const speed = Math.sqrt(r.vx * r.vx + r.vy * r.vy);
+    //   if (speed > 0.2) {
+    //     ctx.beginPath();
+    //     ctx.moveTo(-bodyLength / 2.2, 0);
+    //     ctx.lineTo(-bodyLength / 1.6, -5 * scale);
+    //     ctx.lineTo(-bodyLength / 1.6, 5 * scale);
+    //     ctx.closePath();
+
+    //     const flameLen = 10 + speed * 4;
+    //     ctx.fillStyle = `rgba(255, ${150 + Math.random()*50}, 0, 0.8)`;
+    //     ctx.fill();
+    //   }
+
+    //   // Subtle outline
+    //   ctx.strokeStyle = "rgba(0,0,0,0.4)";
+    //   ctx.lineWidth = 1;
+    //   ctx.stroke();
+
+    //   ctx.restore();
+
+    //   // Label
+    //   ctx.fillStyle = "rgba(255,255,255,0.8)";
+    //   ctx.font = "12px system-ui, sans-serif";
+    //   ctx.fillText("your rocket", sp.x + 12, sp.y - 12);
+    // }
+
+
+
+    // Version2: this is the cool version (has animated flames!)
     function drawShip() {
       const r = state.rocket;
       const sp = worldToScreen(r.x, r.y);
 
-      // ship as diamond
       ctx.save();
       ctx.translate(sp.x, sp.y);
 
+      // Use the velocity angle (world Y is up, screen Y is down)
       const ang = Math.atan2(r.vy, r.vx);
-      ctx.rotate(-ang); // screen y down, our world y up -> rotate opposite for nicer feel
+      ctx.rotate(-ang); 
 
+      const scale = 1.4;
+      
+      // --------------------
+      // 1. Engine Flame (Multi-layered Glow)
+      // --------------------
+      const speed = Math.sqrt(r.vx * r.vx + r.vy * r.vy);
+      if (speed > 0.1) {
+        const flicker = Math.random() * 5;
+        const flameLen = (15 + speed * 5) * scale + flicker;
+        
+        // Outer Orange Glow
+        ctx.beginPath();
+        ctx.moveTo(-10, 0);
+        ctx.quadraticCurveTo(-15, -8, -10 - flameLen, 0);
+        ctx.quadraticCurveTo(-15, 8, -10, 0);
+        ctx.fillStyle = "rgba(255, 120, 0, 0.6)";
+        ctx.fill();
+
+        // Inner Yellow Core
+        ctx.beginPath();
+        ctx.moveTo(-10, 0);
+        ctx.quadraticCurveTo(-12, -4, -10 - (flameLen * 0.6), 0);
+        ctx.quadraticCurveTo(-12, 4, -10, 0);
+        ctx.fillStyle = "rgba(255, 255, 100, 0.9)";
+        ctx.fill();
+      }
+
+      // --------------------
+      // 2. Fins (Swept Back)
+      // --------------------
+      ctx.fillStyle = "#e74c3c"; // Red fins like the image
       ctx.beginPath();
-      ctx.moveTo(0, -SHIP_SIZE);
-      ctx.lineTo(SHIP_SIZE*1.3, 0);
-      ctx.lineTo(0, SHIP_SIZE);
-      ctx.lineTo(-SHIP_SIZE*1.3, 0);
-      ctx.closePath();
-      ctx.fillStyle = "rgba(84,240,255,0.92)";
+      // Top Fin
+      ctx.moveTo(-4, -6);
+      ctx.bezierCurveTo(-15, -15, -20, -15, -12, -6);
+      // Bottom Fin
+      ctx.moveTo(-4, 6);
+      ctx.bezierCurveTo(-15, 15, -20, 15, -12, 6);
       ctx.fill();
 
-      ctx.strokeStyle = "rgba(255,255,255,0.12)";
-      ctx.lineWidth = 2;
-      ctx.stroke();
+      // --------------------
+      // 3. Main Body (Metallic Gradient)
+      // --------------------
+      const bodyGrad = ctx.createLinearGradient(0, -10, 0, 10);
+      bodyGrad.addColorStop(0, "#ffffff");
+      bodyGrad.addColorStop(0.5, "#dcdde1");
+      bodyGrad.addColorStop(1, "#bdc3c7");
+
+      ctx.beginPath();
+      ctx.moveTo(20 * scale, 0); // Nose tip
+      // Top curve
+      ctx.bezierCurveTo(15 * scale, -10 * scale, -10 * scale, -10 * scale, -12 * scale, 0);
+      // Bottom curve
+      ctx.bezierCurveTo(-10 * scale, 10 * scale, 15 * scale, 10 * scale, 20 * scale, 0);
+      ctx.fillStyle = bodyGrad;
+      ctx.fill();
+
+      // --------------------
+      // 4. Nose Cone (Red Tip)
+      // --------------------
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(20 * scale, 0);
+      ctx.bezierCurveTo(18 * scale, -5 * scale, 12 * scale, -6 * scale, 10 * scale, -7 * scale);
+      ctx.lineTo(10 * scale, 7 * scale);
+      ctx.bezierCurveTo(12 * scale, 6 * scale, 18 * scale, 5 * scale, 20 * scale, 0);
+      ctx.clip(); // Only paint the tip red
+      ctx.fillStyle = "#e74c3c";
+      ctx.fill();
       ctx.restore();
 
-      // label like sketch
-      ctx.fillStyle = "rgba(255,255,255,0.8)";
-      ctx.font = "12px system-ui, sans-serif";
-      ctx.fillText("your ship", sp.x + 10, sp.y - 10);
+      // --------------------
+      // 5. Window
+      // --------------------
+      ctx.beginPath();
+      ctx.arc(2, 0, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = "#3498db";
+      ctx.fill();
+      ctx.strokeStyle = "#2980b9";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.restore();
     }
+
+
+
+
+  
+
+
+
+
+
+    
+
+
+
 
     function drawDragVector() {
       if (!dragActive || !dragStart || !dragNow) return;
@@ -564,6 +885,10 @@
       ctx.fillText(`Δv ≈ ${dvMag.toFixed(2)}`, end.x + 10, end.y + 4);
     }
 
+
+
+
+
     function clampDV(dvx, dvy) {
       // Backend clamps too, but matching here feels better
       const DV_MAX = 3.0;
@@ -573,61 +898,160 @@
       return {dvx: u.x * DV_MAX, dvy: u.y * DV_MAX};
     }
 
+
+
+    // this is the general destination, giving the objective
+
+    // version 1
+    // function drawDestinationAndArrow() {
+    //   const dest = state.destination;
+    //   const rocket = state.rocket;
+
+    //   // Draw destination circle if on-screen
+    //   const ds = worldToScreen(dest.x, dest.y);
+    //   const w = canvas.getBoundingClientRect().width;
+    //   const h = canvas.getBoundingClientRect().height;
+
+    //   const onScreen = (ds.x >= -60 && ds.x <= w+60 && ds.y >= -60 && ds.y <= h+60);
+
+    //   if (onScreen) {
+    //     ctx.beginPath();
+    //     ctx.arc(ds.x, ds.y, dest.radius * state.camera.zoom, 0, Math.PI*2);
+    //     ctx.strokeStyle = "rgba(95,227,255,0.55)";
+    //     ctx.lineWidth = 3;
+    //     ctx.stroke();
+
+    //     ctx.fillStyle = "rgba(95,227,255,0.9)";
+    //     ctx.font = "12px system-ui, sans-serif";
+    //     ctx.fillText("destination", ds.x + 10, ds.y - 10);
+    //   }
+
+    //   // Always draw edge arrow pointing toward destination (so player isn't lost)
+    //   const shipS = worldToScreen(rocket.x, rocket.y);
+    //   const vx = ds.x - shipS.x;
+    //   const vy = ds.y - shipS.y;
+
+    //   // Find intersection with safe rect
+    //   const pad = 26;
+    //   const minX = pad, maxX = w - pad, minY = pad, maxY = h - pad;
+
+    //   // If destination is on screen and close-ish, keep arrow small near it; else clamp to edge
+    //   let ax = ds.x, ay = ds.y;
+    //   if (!onScreen) {
+    //     // Ray from center to dest; intersect with bounds
+    //     const cx = w/2, cy = h/2;
+    //     const rx = ds.x - cx, ry = ds.y - cy;
+    //     const tCandidates = [];
+
+    //     if (Math.abs(rx) > 1e-6) {
+    //       tCandidates.push((minX - cx) / rx);
+    //       tCandidates.push((maxX - cx) / rx);
+    //     }
+    //     if (Math.abs(ry) > 1e-6) {
+    //       tCandidates.push((minY - cy) / ry);
+    //       tCandidates.push((maxY - cy) / ry);
+    //     }
+
+    //     let best = null;
+    //     for (const t of tCandidates) {
+    //       if (t <= 0) continue;
+    //       const x = cx + rx * t;
+    //       const y = cy + ry * t;
+    //       if (x >= minX-1 && x <= maxX+1 && y >= minY-1 && y <= maxY+1) {
+    //         if (best === null || t < best.t) best = {t, x, y};
+    //       }
+    //     }
+    //     if (best) { ax = best.x; ay = best.y; }
+    //   }
+
+    //   const ang = Math.atan2(vy, vx);
+    //   ctx.save();
+    //   ctx.translate(ax, ay);
+    //   ctx.rotate(ang);
+
+    //   ctx.beginPath();
+    //   ctx.moveTo(0, 0);
+    //   ctx.lineTo(-DEST_EDGE_ARROW_SIZE, -DEST_EDGE_ARROW_SIZE/2);
+    //   ctx.lineTo(-DEST_EDGE_ARROW_SIZE,  DEST_EDGE_ARROW_SIZE/2);
+    //   ctx.closePath();
+    //   ctx.fillStyle = "rgba(95,227,255,0.70)";
+    //   ctx.fill();
+    //   ctx.restore();
+
+    //   // "General direction of destination" label (like sketch)
+    //   ctx.fillStyle = "rgba(255,255,255,0.45)";
+    //   ctx.font = "12px system-ui, sans-serif";
+    //   ctx.fillText("general direction of destination", 18, h - 18);
+    // }
+
+
+
+    // version 2, wt a pulse
     function drawDestinationAndArrow() {
       const dest = state.destination;
       const rocket = state.rocket;
 
-      // Draw destination circle if on-screen
       const ds = worldToScreen(dest.x, dest.y);
       const w = canvas.getBoundingClientRect().width;
       const h = canvas.getBoundingClientRect().height;
 
+      // 1. Logic for "Pulsing" effect using Time
+      const pulse = Math.sin(Date.now() / 200) * 1.5;             // Compresses/Expands over time
+      const opacity = 0.5 + Math.sin(Date.now() / 200) * 0.1;   // Glow intensity
+
       const onScreen = (ds.x >= -60 && ds.x <= w+60 && ds.y >= -60 && ds.y <= h+60);
 
+      // if (onScreen) {
+      //   // Draw glowing destination circle
+      //   ctx.beginPath();
+      //   ctx.arc(ds.x, ds.y, (dest.radius * state.camera.zoom) + pulse, 0, Math.PI*2);
+      //   ctx.strokeStyle = `rgba(95, 227, 255, ${opacityß})`;ß
+      //   ctx.lineWidth = 4;
+      //   ctx.stroke();
+
+      //   ctx.fillStyle = "rgba(95,227,255,1)";
+      //   ctx.font = "bold 14px system-ui";
+      //   ctx.fillText("TARGET ACQUIRED", ds.x + 15, ds.y - 15);
+      // }
+
+
+        // 1. Logic for "Pulsing" effect using Time
       if (onScreen) {
-        ctx.beginPath();
-        ctx.arc(ds.x, ds.y, dest.radius * state.camera.zoom, 0, Math.PI*2);
-        ctx.strokeStyle = "rgba(95,227,255,0.55)";
-        ctx.lineWidth = 3;
-        ctx.stroke();
+      // Draw destination circle with soft glow
+      ctx.beginPath();
+      ctx.arc(ds.x, ds.y, (dest.radius * state.camera.zoom) + pulse, 0, Math.PI*2);
+      ctx.strokeStyle = `rgba(95, 227, 255, ${opacity})`;
+      ctx.lineWidth = 2.5; // Slightly thinner line for elegance
+      ctx.stroke();
 
-        ctx.fillStyle = "rgba(95,227,255,0.9)";
-        ctx.font = "12px system-ui, sans-serif";
-        ctx.fillText("destination", ds.x + 10, ds.y - 10);
-      }
+      ctx.fillStyle = "rgba(95,227,255,0.9)";
+      ctx.font = "12px system-ui";
+      ctx.fillText("TARGET", ds.x + 12, ds.y - 12);
+    }
 
-      // Always draw edge arrow pointing toward destination (so player isn't lost)
+      // 2. The Edge Indicator (The "Glow" Pointer)
       const shipS = worldToScreen(rocket.x, rocket.y);
       const vx = ds.x - shipS.x;
       const vy = ds.y - shipS.y;
+      const distPixels = Math.sqrt(vx*vx + vy*vy);
 
-      // Find intersection with safe rect
-      const pad = 26;
+      const pad = 40; // More breathing room from the edge
       const minX = pad, maxX = w - pad, minY = pad, maxY = h - pad;
 
-      // If destination is on screen and close-ish, keep arrow small near it; else clamp to edge
       let ax = ds.x, ay = ds.y;
+      
       if (!onScreen) {
-        // Ray from center to dest; intersect with bounds
         const cx = w/2, cy = h/2;
         const rx = ds.x - cx, ry = ds.y - cy;
         const tCandidates = [];
-
-        if (Math.abs(rx) > 1e-6) {
-          tCandidates.push((minX - cx) / rx);
-          tCandidates.push((maxX - cx) / rx);
-        }
-        if (Math.abs(ry) > 1e-6) {
-          tCandidates.push((minY - cy) / ry);
-          tCandidates.push((maxY - cy) / ry);
-        }
+        if (Math.abs(rx) > 1e-6) { tCandidates.push((minX - cx) / rx); tCandidates.push((maxX - cx) / rx); }
+        if (Math.abs(ry) > 1e-6) { tCandidates.push((minY - cy) / ry); tCandidates.push((maxY - cy) / ry); }
 
         let best = null;
         for (const t of tCandidates) {
           if (t <= 0) continue;
-          const x = cx + rx * t;
-          const y = cy + ry * t;
-          if (x >= minX-1 && x <= maxX+1 && y >= minY-1 && y <= maxY+1) {
+          const x = cx + rx * t; const y = cy + ry * t;
+          if (x >= minX-2 && x <= maxX+2 && y >= minY-2 && y <= maxY+2) {
             if (best === null || t < best.t) best = {t, x, y};
           }
         }
@@ -635,24 +1059,43 @@
       }
 
       const ang = Math.atan2(vy, vx);
+      
+      // 3. Drawing the "Compressing" Glowing Arrow
       ctx.save();
       ctx.translate(ax, ay);
       ctx.rotate(ang);
 
+      // Add Outer Glow
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = "rgba(95, 227, 255, 0.8)";
+
       ctx.beginPath();
+      // The arrow "compresses" (moves back and forth) based on the pulse variable
+      const arrowHeadSize = DEST_EDGE_ARROW_SIZE + (onScreen ? 0 : pulse);
       ctx.moveTo(0, 0);
-      ctx.lineTo(-DEST_EDGE_ARROW_SIZE, -DEST_EDGE_ARROW_SIZE/2);
-      ctx.lineTo(-DEST_EDGE_ARROW_SIZE,  DEST_EDGE_ARROW_SIZE/2);
+      ctx.lineTo(-arrowHeadSize, -arrowHeadSize/1.5);
+      ctx.lineTo(-arrowHeadSize * 0.7, 0); // Notched back for a tech look
+      ctx.lineTo(-arrowHeadSize, arrowHeadSize/1.5);
       ctx.closePath();
-      ctx.fillStyle = "rgba(95,227,255,0.70)";
+      
+      ctx.fillStyle = `rgba(95, 227, 255, ${onScreen ? 0.3 : 0.9})`;
       ctx.fill();
       ctx.restore();
 
-      // "General direction of destination" label (like sketch)
-      ctx.fillStyle = "rgba(255,255,255,0.45)";
-      ctx.font = "12px system-ui, sans-serif";
-      ctx.fillText("general direction of destination", 18, h - 18);
+      // 4. Distance Text (Written indicator)
+      if (!onScreen) {
+        ctx.fillStyle = `rgba(95, 227, 255, ${opacity})`;
+        ctx.font = "bold 12px monospace";
+        const distKm = Math.floor(distPixels / 10);
+        ctx.fillText(`${distKm}km`, ax - 20, ay + 30);
+      }
     }
+
+
+
+
+
+
 
     function render() {
       if (!state) return;
