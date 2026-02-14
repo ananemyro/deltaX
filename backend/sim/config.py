@@ -3,7 +3,9 @@ G = 1.0
 SOFTENING_R2 = 25.0
 DT_MIN, DT_MAX = 0.001, 0.05
 MAX_WORLD_ABS = 4000.0
-REVEAL_MARGIN = 10.0
+# REVEAL_MARGIN = 10.0
+REVEAL_MARGIN = 100.0 # so it doesnt reveal color, only upon crashing
+
 
 DV_MAX = 3.0
 PLAN_COOLDOWN_S = 0.25
