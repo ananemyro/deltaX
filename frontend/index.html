@@ -1,0 +1,177 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Gravitational Slingshot Simulator (Placeholder)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 16px; }
+    .row { display: flex; gap: 16px; align-items: start; }
+    canvas { border: 1px solid #ccc; border-radius: 8px; }
+    .panel { width: 320px; }
+    .panel > * { margin-bottom: 10px; }
+    button { padding: 8px 10px; }
+    input { width: 100%; }
+    code { background: #f6f6f6; padding: 2px 6px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h2>deltaX</h2>
+
+  <div class="row">
+    <canvas id="c" width="800" height="520"></canvas>
+
+    <div class="panel">
+      <button id="toggle">▶ Run</button>
+      <button id="reset">↺ Reset</button>
+
+      <label>Time step (dt): <span id="dtLabel">0.016</span></label>
+      <input id="dt" type="range" min="0.005" max="0.05" step="0.001" value="0.016"/>
+
+      <label>Planet mass: <span id="mLabel">2000</span></label>
+      <input id="m" type="range" min="200" max="8000" step="50" value="2000"/>
+
+      <div id="stats"></div>
+
+      <p style="font-size: 0.9em;">
+        Tip: later you can add click-to-place planet, drag-to-aim initial velocity, trail rendering, etc.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const API = "http://127.0.0.1:5000/api";
+    const canvas = document.getElementById("c");
+    const ctx = canvas.getContext("2d");
+
+    const btnToggle = document.getElementById("toggle");
+    const btnReset = document.getElementById("reset");
+    const dtSlider = document.getElementById("dt");
+    const mSlider  = document.getElementById("m");
+    const dtLabel  = document.getElementById("dtLabel");
+    const mLabel   = document.getElementById("mLabel");
+    const stats    = document.getElementById("stats");
+
+    let running = false;
+    let state = null;
+    let trail = [];
+
+    function worldToScreen(x, y) {
+      // center world at canvas center
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      return [cx + x, cy - y];
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // draw origin crosshair
+      ctx.beginPath();
+      ctx.moveTo(canvas.width/2 - 10, canvas.height/2);
+      ctx.lineTo(canvas.width/2 + 10, canvas.height/2);
+      ctx.moveTo(canvas.width/2, canvas.height/2 - 10);
+      ctx.lineTo(canvas.width/2, canvas.height/2 + 10);
+      ctx.strokeStyle = "#ddd";
+      ctx.stroke();
+
+      if (!state) return;
+
+      // trail
+      ctx.beginPath();
+      for (let i = 0; i < trail.length; i++) {
+        const [sx, sy] = worldToScreen(trail[i].x, trail[i].y);
+        if (i === 0) ctx.moveTo(sx, sy);
+        else ctx.lineTo(sx, sy);
+      }
+      ctx.strokeStyle = "rgba(0,0,0,0.25)";
+      ctx.stroke();
+
+      // planet
+      const p = state.planet;
+      const [px, py] = worldToScreen(p.x, p.y);
+      ctx.beginPath();
+      ctx.arc(px, py, 18, 0, Math.PI * 2);
+      ctx.fillStyle = "#444";
+      ctx.fill();
+
+      // ship
+      const s = state.ship;
+      const [sx, sy] = worldToScreen(s.x, s.y);
+      ctx.beginPath();
+      ctx.arc(sx, sy, 5, 0, Math.PI * 2);
+      ctx.fillStyle = "#1b6";
+      ctx.fill();
+
+      // velocity vector
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(sx + s.vx * 12, sy - s.vy * 12);
+      ctx.strokeStyle = "#1b6";
+      ctx.stroke();
+    }
+
+    async function getState() {
+      const res = await fetch(`${API}/state`);
+      state = await res.json();
+      return state;
+    }
+
+    async function stepOnce() {
+      const dt = parseFloat(dtSlider.value);
+      const res = await fetch(`${API}/step`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dt })
+      });
+      state = await res.json();
+
+      trail.push({ x: state.ship.x, y: state.ship.y });
+      if (trail.length > 600) trail.shift();
+
+      stats.innerHTML =
+        `t = ${state.t.toFixed(2)}<br>` +
+        `ship: x=${state.ship.x.toFixed(1)}, y=${state.ship.y.toFixed(1)}<br>` +
+        `v: vx=${state.ship.vx.toFixed(2)}, vy=${state.ship.vy.toFixed(2)}`;
+
+      draw();
+    }
+
+    async function reset() {
+      const planet_m = parseFloat(mSlider.value);
+      const res = await fetch(`${API}/reset`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planet_m })
+      });
+      state = await res.json();
+      trail = [{ x: state.ship.x, y: state.ship.y }];
+      draw();
+    }
+
+    function loop() {
+      if (running) stepOnce().catch(console.error);
+      requestAnimationFrame(loop);
+    }
+
+    // UI wiring
+    btnToggle.onclick = () => {
+      running = !running;
+      btnToggle.textContent = running ? "⏸ Pause" : "▶ Run";
+    };
+
+    btnReset.onclick = () => reset().catch(console.error);
+
+    dtSlider.oninput = () => dtLabel.textContent = dtSlider.value;
+    mSlider.oninput  = () => mLabel.textContent  = mSlider.value;
+
+    // Start
+    (async () => {
+      dtLabel.textContent = dtSlider.value;
+      mLabel.textContent = mSlider.value;
+      await getState();
+      await reset();
+      loop();
+    })();
+  </script>
+</body>
+</html>
