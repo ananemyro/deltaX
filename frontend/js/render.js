@@ -11,6 +11,16 @@ const stars = Array.from({ length: STAR_COUNT }, () => ({
 
 function len(x, y) { return Math.sqrt(x * x + y * y); }
 
+function fmtDistance(km) {
+  const a = Math.abs(km);
+  const AU = 149_597_870.7;
+
+  if (a >= 0.5 * AU) return `${(km / AU).toFixed(2)} AU`;
+  if (a >= 1e6) return `${(km / 1e6).toFixed(1)} Mkm`;
+  if (a >= 1e3) return `${(km / 1e3).toFixed(0)}k km`;
+  return `${km.toFixed(0)} km`;
+}
+
 function drawStars(canvas, ctx) {
   const w = canvas.getBoundingClientRect().width;
   const h = canvas.getBoundingClientRect().height;
@@ -41,15 +51,17 @@ function drawTrail(canvas, ctx) {
 function drawPlanets(canvas, ctx) {
   for (const p of sim.state.planets) {
     const sp = worldToScreen(canvas, p.x, p.y);
-    const radius = p.radius * sim.state.camera.zoom;
+    const physPx = p.radius * sim.state.camera.zoom;
+    const radius = Math.max(4, Math.pow(physPx, 0.7) * 120);
 
     ctx.save();
     ctx.translate(sp.x, sp.y);
 
-    if (p.mass > 2500 || p.color === "green") {
+    const hasRings = p.has_rings;
+    if (hasRings) {
       ctx.beginPath();
-      ctx.ellipse(0, 0, radius * 2.2, radius * 0.8, Math.PI / 6, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+      ctx.ellipse(0, 0, radius * 2.4, radius * 0.9, Math.PI / 6, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.18)";
       ctx.lineWidth = 3;
       ctx.stroke();
     }
@@ -69,9 +81,6 @@ function drawPlanets(canvas, ctx) {
       ctx.fillStyle = "rgba(0,0,0,0.2)";
       ctx.beginPath(); ctx.arc(-radius/2, radius/4, radius/5, 0, Math.PI*2); ctx.fill();
       ctx.beginPath(); ctx.arc(radius/3, -radius/3, radius/6, 0, Math.PI*2); ctx.fill();
-    } else {
-      ctx.fillStyle = "white";
-      ctx.fillRect(-radius, -radius/4, radius*2, radius/2);
     }
     ctx.globalAlpha = 1.0;
 
@@ -162,6 +171,9 @@ function drawShip(canvas, ctx) {
 function drawDestinationAndArrow(canvas, ctx) {
   const dest = sim.state.destination;
   const rocket = sim.state.rocket;
+  const dxw = dest.x - rocket.x;
+  const dyw = dest.y - rocket.y;
+  const distWorldKm = Math.hypot(dxw, dyw);
 
   const ds = worldToScreen(canvas, dest.x, dest.y);
   const w = canvas.getBoundingClientRect().width;
@@ -174,7 +186,8 @@ function drawDestinationAndArrow(canvas, ctx) {
 
   if (onScreen) {
     ctx.beginPath();
-    ctx.arc(ds.x, ds.y, (dest.radius * sim.state.camera.zoom) + pulse, 0, Math.PI * 2);
+    const rPx = Math.min(80, dest.radius * sim.state.camera.zoom);
+    ctx.arc(ds.x, ds.y, rPx + pulse, 0, Math.PI * 2);
     ctx.strokeStyle = `rgba(95, 227, 255, ${opacity})`;
     ctx.lineWidth = 2.5;
     ctx.stroke();
@@ -238,8 +251,10 @@ function drawDestinationAndArrow(canvas, ctx) {
   if (!onScreen) {
     ctx.fillStyle = `rgba(95, 227, 255, ${opacity})`;
     ctx.font = "bold 12px monospace";
-    const distKm = Math.floor(distPixels / 10);
-    ctx.fillText(`${distKm}km`, ax - 20, ay + 30);
+    const label = fmtDistance(distWorldKm);
+    ctx.textAlign = "center";
+    ctx.fillText(label, ax, ay + 30);
+    ctx.textAlign = "left";
   }
 }
 
@@ -274,10 +289,11 @@ function drawJoystickVector(canvas, ctx) {
 export function renderFrame(canvas, ctx) {
   if (!sim.state) return;
 
-  const w = canvas.getBoundingClientRect().width;
-  const h = canvas.getBoundingClientRect().height;
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.restore();
 
-  ctx.clearRect(0, 0, w, h);
   drawStars(canvas, ctx);
   drawTrail(canvas, ctx);
   drawPlanets(canvas, ctx);

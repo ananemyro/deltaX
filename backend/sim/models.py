@@ -12,11 +12,12 @@ class Planet:
     id: int
     x: float
     y: float
-    mass: float
+    mu: float
     radius: float
     kind: str
     revealed: bool
     recoverable: bool
+    has_rings: bool
 
 @dataclass
 class Destination:

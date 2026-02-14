@@ -34,7 +34,12 @@ export function initInput() {
   const joystickMag = document.getElementById("joystickMag");
 
   resetBtn.addEventListener("click", async () => {
-    await apiReset();
+    try {
+        await apiReset();
+      } catch (e) {
+        console.error("Reset failed:", e);
+        return;
+      }
     sim.started = false;
     sim.joyVec = { x: 0, y: 0 };
     setKnob(joystick, knob, 0, 0);

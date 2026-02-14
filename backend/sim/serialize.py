@@ -20,12 +20,13 @@ def serialize_planet(p: Planet) -> Dict[str, Any]:
     return {
         "id": p.id,
         "x": p.x, "y": p.y,
-        "mass": p.mass,
+        "mu": p.mu,
         "radius": p.radius,
         "revealed": p.revealed,
         "recoverable": p.recoverable,
         "status": status,
         "color": color,
+        "has_rings": p.has_rings,
     }
 
 def state_payload() -> Dict[str, Any]:

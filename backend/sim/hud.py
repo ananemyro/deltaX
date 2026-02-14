@@ -6,40 +6,39 @@ from sim.mathutil import norm, unit, dist
 from sim.config import clamp
 from sim.models import Rocket, Destination, Planet
 
-def compute_success_probability() -> float:
-    """
-    Heuristic "probability of success" that reacts to alignment, distance,
-    and revealed bad-planet risk. Returns [0,1].
-    """
-    rocket: Rocket = STATE["rocket"]
-    dest: Destination = STATE["dest"]
-    planets: List[Planet] = STATE["planets"]
 
-    # Distance & alignment
-    to_dx, to_dy = (dest.x - rocket.x), (dest.y - rocket.y)
+def compute_success_score() -> float:
+    rocket = STATE["rocket"]
+    dest = STATE["dest"]
+    planets = STATE["planets"]
+
+    to_dx, to_dy = dest.x - rocket.x, dest.y - rocket.y
     d = norm(to_dx, to_dy)
     ux, uy = unit(to_dx, to_dy)
 
-    v = norm(rocket.vx, rocket.vy)
+    v = norm(rocket.vx, rocket.vy)  # km/s
     wx, wy = unit(rocket.vx, rocket.vy)
     alignment = ux * wx + uy * wy  # [-1,1]
 
-    # Risk from revealed bad planets (closer + heavier => worse)
+    # Risk term based on gravitational acceleration magnitude ~ mu/r^2
     risk = 0.0
     for p in planets:
         if p.revealed and p.kind == "bad":
-            r = max(30.0, dist((rocket.x, rocket.y), (p.x, p.y)))
-            risk += (p.mass / (r * r)) * (1.25 if not p.recoverable else 1.0)
-    risk = min(risk, 2.5)
+            r = max(1_000.0, dist((rocket.x, rocket.y), (p.x, p.y)))  # km
+            risk += (p.mu / (r * r)) * (1.25 if not p.recoverable else 1.0)
 
-    # Normalize distance
-    d0 = 2600.0
+    # Normalize scales so numbers stay ~O(1)
+    # 1 AU ~ 150 million km
+    d0 = 10 * 149_597_870.7
     dist_term = d / d0
 
-    # Score -> sigmoid
-    score = (1.5 * alignment) - (1.2 * dist_term) - (1.1 * risk) + (0.2 * (v / 4.0))
+    # Typical heliocentric speeds are ~25–40 km/s
+    v_term = v / 30.0
+
+    score = (1.5 * alignment) - (1.2 * dist_term) - (0.00002 * risk) + (0.2 * v_term)
     p = 1.0 / (1.0 + math.exp(-score))
     return float(clamp(p, 0.0, 1.0))
+
 
 def hud() -> Dict[str, Any]:
     rocket: Rocket = STATE["rocket"]
@@ -51,7 +50,7 @@ def hud() -> Dict[str, Any]:
     return {
         "distance_to_destination": d,
         "speed": v,
-        "success_probability": compute_success_probability(),
+        "success_score": compute_success_score(),
         "status": STATE["status"],
         "fail_reason": STATE["fail_reason"],
     }

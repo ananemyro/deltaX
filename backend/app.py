@@ -11,6 +11,8 @@ from sim.mathutil import norm, unit
 app = Flask(__name__)
 CORS(app)
 
+TIME_SCALE = 5000  # 1 real second = simulated seconds
+
 @app.get("/api/state")
 def api_state():
     return jsonify(state_payload())
@@ -60,7 +62,7 @@ def api_step():
     data = request.get_json(silent=True) or {}
     dt = float(data.get("dt", 0.016))
     dt = clamp(dt, DT_MIN, DT_MAX)
-    step_sim(dt)
+    step_sim(dt * TIME_SCALE)
     return jsonify(state_payload())
 
 if __name__ == "__main__":

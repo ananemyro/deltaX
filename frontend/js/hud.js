@@ -31,7 +31,7 @@ export function updateHUD() {
 
   const d = sim.state.hud.distance_to_destination;
   const v = sim.state.hud.speed;
-  const p = sim.state.hud.success_probability;
+  const p = sim.state.hud.success_score;
 
   if (sim.initialDistance == null) sim.initialDistance = d;
   const prog = clamp(1 - d / Math.max(1e-6, sim.initialDistance), 0, 1);
@@ -39,13 +39,13 @@ export function updateHUD() {
   el.progressFill.style.width = `${(prog * 100).toFixed(1)}%`;
   el.progressText.textContent = `${Math.round(prog * 100)}%`;
 
-  el.speedText.textContent = v.toFixed(2);
+  el.speedText.textContent = fmtSpeedKmS(v);
   el.probText.textContent = `${Math.round(p * 100)}%`;
 
-  el.distText.textContent = d.toFixed(1);
-  el.speedText2.textContent = v.toFixed(2);
+  el.distText.textContent = fmtDistanceKm(d);
+  el.speedText2.textContent = fmtSpeedKmS(v);
   el.probText2.textContent = `${Math.round(p * 100)}%`;
-  el.timeText.textContent = sim.state.t.toFixed(2);
+  el.timeText.textContent = fmtTimeSeconds(sim.state.t);
 
   if (sim.state.hud.status === "success") {
     setStatus("good", "success");
@@ -56,4 +56,21 @@ export function updateHUD() {
   } else {
     setStatus(sim.running ? "run" : "wait", sim.running ? "running" : "ready");
   }
+}
+
+function fmtDistanceKm(km) {
+  // show in Mkm above 1e6 km
+  if (Math.abs(km) >= 1e6) return `${(km / 1e6).toFixed(2)} Mkm`;
+  return `${km.toFixed(0)} km`;
+}
+
+function fmtSpeedKmS(v) {
+  return `${v.toFixed(2)} km/s`;
+}
+
+function fmtTimeSeconds(t) {
+  if (t >= 86400) return `${(t / 86400).toFixed(2)} d`;
+  if (t >= 3600) return `${(t / 3600).toFixed(2)} h`;
+  if (t >= 60) return `${(t / 60).toFixed(2)} min`;
+  return `${t.toFixed(1)} s`;
 }

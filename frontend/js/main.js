@@ -10,24 +10,26 @@ const { canvas, ctx } = initCanvas();
 initHUD();
 initInput();
 
-let lastTime = performance.now();
+let last = performance.now();
+let acc = 0;
+let stepping = false;
 
 async function tick(now) {
-  lastTime = now;
-
   if (sim.state) {
-    if (sim.started && sim.state.hud.status === "running") {
+    if (!stepping && sim.started && sim.state.hud.status === "running") {
+      stepping = true;
       try {
         await apiStep(STEP_DT);
       } catch (e) {
         console.error(e);
         setStatus("bad", "backend error");
+      } finally {
+        stepping = false;
       }
     }
     updateRenderCamera();
     renderFrame(canvas, ctx);
   }
-
   requestAnimationFrame(tick);
 }
 

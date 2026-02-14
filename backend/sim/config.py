@@ -1,27 +1,29 @@
-
+DT = 10.0
 G = 1.0
-SOFTENING_R2 = 25.0
-DT_MIN, DT_MAX = 0.001, 0.05
-MAX_WORLD_ABS = 4000.0
-# REVEAL_MARGIN = 10.0
-REVEAL_MARGIN = 100.0 # so it doesnt reveal color, only upon crashing
+SOFTENING_KM = 200.0       # prevents singularities at close range
+DT_MIN = 0.001
+DT_MAX = 60.0
+MAX_WORLD_ABS = 2.0e9
 
-
-DV_MAX = 60.0
+DV_MAX = 2.0
 PLAN_COOLDOWN_S = 0.25
 
 CAM_ALPHA = 0.35
 LOOKAHEAD = 0.0
-ZOOM_DEFAULT = 2.0
+ZOOM_DEFAULT = 1.0e-5
 
 GOOD_COUNT = 10
 BAD_COUNT = 12
-GOOD_MASS_RANGE = (900.0, 1800.0)
-BAD_MASS_RANGE = (1600.0, 4200.0)
-PLANET_RADIUS_RANGE = (14.0, 26.0)
+GOOD_MU_RANGE = (1e5, 5e6)
+BAD_MU_RANGE  = (5e6, 2e8)
+PLANET_RADIUS_RANGE = (2_000.0, 70_000.0)  # km
 
-DEATH_RADIUS_FACTOR = 0.65
+HAZARD_RADIUS_FACTOR = 20.0
+DEATH_RADIUS_FACTOR = 50
 CRASH_RADIUS_FACTOR = 1.0
+
+REVEAL_MARGIN = 0.0
+HAZARD_RADIUS_MIN_KM = 600_000.0
 
 def clamp(x: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, x))
