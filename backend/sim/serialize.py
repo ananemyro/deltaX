@@ -87,6 +87,28 @@ def serialize_planet(p: Planet) -> Dict[str, Any]:
 
 
 
+# Version1 : last working version
+# def state_payload() -> Dict[str, Any]:
+#     rocket: Rocket = STATE["rocket"]
+#     dest: Destination = STATE["dest"]
+#     cam: Camera = STATE["camera"]
+#     planets: List[Planet] = STATE["planets"]
+
+#     return {
+#         "t": STATE["t"],
+#         "seed": STATE.get("seed"),
+#         "rocket": asdict(rocket),
+#         "destination": asdict(dest),
+#         "camera": asdict(cam),
+#         "planets": [serialize_planet(p) for p in planets],
+#         "hud": hud(),
+
+#         # need this for the countdown (when rocket on orange planet)
+#         "latched_planet_id": STATE.get("latched_planet_id"),
+#         "countdown": STATE.get("countdown", 0.0),
+
+#     }
+
 
 def state_payload() -> Dict[str, Any]:
     rocket: Rocket = STATE["rocket"]
@@ -102,4 +124,7 @@ def state_payload() -> Dict[str, Any]:
         "camera": asdict(cam),
         "planets": [serialize_planet(p) for p in planets],
         "hud": hud(),
+        # --- ADD THESE TWO LINES ---
+        "latched_planet_id": STATE.get("latched_planet_id"),
+        "countdown": STATE.get("countdown", 0.0),
     }

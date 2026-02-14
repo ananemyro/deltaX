@@ -76,7 +76,7 @@ def accel_from_planets(rocket: Rocket, planets: List[Planet]) -> Tuple[float, fl
 #         if p:
 #             # Lock rocket to planet center
 #             rocket.x, rocket.y = p.x, p.y
-#             rocket.vx, rocket.vy = 0.0, 0.0
+#             rocket.vx, rocket.vy = 0.0, 0.0 
             
 #             # If it's "okay" (Orange), tick the timer
 #             if p.kind == "okay":
@@ -198,6 +198,19 @@ def update_reveals_and_collisions(dt: float) -> None:
         # --- NEW: Orbiting Logic ---
         p = next(p for p in planets if p.id == STATE["latched_planet_id"])
         
+
+        # --- NEW: COUNTDOWN LOGIC ---
+        if p.kind == "okay":
+            STATE["countdown"] -= dt # Subtract time passed
+            
+            # If time runs out, the planet turns red and explodes
+            if STATE["countdown"] <= 0:
+                p.kind = "bad"
+                p.color = "#ff2c2c"
+                STATE["status"] = "failed"
+                STATE["fail_reason"] = "planet_instability_explosion"
+
+
         # 1. Calculate the vector from planet to rocket
         dx, dy = rocket.x - p.x, rocket.y - p.y
         r = math.sqrt(dx * dx + dy * dy)

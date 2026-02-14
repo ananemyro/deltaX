@@ -68,7 +68,7 @@ def reset_world(seed: Optional[int] = None) -> None:
     STATE["fail_reason"] = None
     STATE["last_plan_time"] = -1e9
     STATE["latched_planet_id"] = None
-    # STATE["countdown"] = 0.0
+    STATE["countdown"] = 0.0
 
     rocket = Rocket(
         x=0.0,

@@ -174,6 +174,29 @@ function drawPlanets(canvas, ctx) {
     ctx.stroke();
     ctx.setLineDash([]); // ALWAYS reset this so other lines aren't dotted!
 
+
+        // Check if the rocket is latched to THIS planet and if it's an "okay" (orange) one
+    if (sim.state.latched_planet_id === p.id && p.status === "okay") {
+      const countdown = sim.state.countdown;
+      
+      // Turn text red and make it bigger when time is running out
+      ctx.fillStyle = countdown < 3 ? "#ff7675" : "white"; 
+      ctx.font = "bold 18px monospace";
+      ctx.textAlign = "center";
+      
+      // Draw the seconds remaining above the planet
+      ctx.fillText(Math.ceil(countdown) + "s", 0, -radius - 30);
+      
+      // Visual emergency pulse when under 3 seconds
+      if (countdown < 3) {
+        ctx.beginPath();
+        ctx.arc(0, 0, radius + 15, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(255, 44, 44, ${0.3 + Math.sin(Date.now()/100)*0.2})`;
+        ctx.lineWidth = 4;
+        ctx.stroke();
+      }
+    }
+
     // 2. Planetary Rings (For "good" or large mass)
     if (p.mass > 2500 || p.status === "good") {
       ctx.beginPath();
@@ -182,6 +205,9 @@ function drawPlanets(canvas, ctx) {
       ctx.lineWidth = 3;
       ctx.stroke();
     }
+
+
+    
 
     // 3. Dynamic Gradient (Sphere effect)
     const grad = ctx.createRadialGradient(-radius/3, -radius/3, radius/10, 0, 0, radius);
@@ -219,6 +245,71 @@ function drawPlanets(canvas, ctx) {
 }
 
 
+
+// New function that will have the flsahing timer for orange-> red timers
+function drawGlobalWarning(canvas, ctx) {
+  // 1. Check if we are even latched
+  const latchedId = sim.state.latched_planet_id;
+  if (latchedId === null) return;
+
+  const countdown = sim.state.countdown;
+  
+  // 2. Find the planet
+  const currentPlanet = sim.state.planets.find(p => p.id === latchedId);
+
+  // 3. Only show if it's a ticking orange ("okay") planet
+  if (currentPlanet && currentPlanet.status === "okay") {
+    const w = canvas.getBoundingClientRect().width;
+    const opacity = 0.4 + Math.sin(Date.now() / 150) * 0.4;
+
+    ctx.save();
+    
+    // --- CRITICAL FIX: Reset the "painter" to screen coordinates (0,0) ---
+    // This ignores any previous planet translations
+    ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
+    
+    // Position of the box Timer: Top Right Corner
+    const boxW = 180;
+    const boxH = 60;
+    const padding = 20;
+    const x = w - boxW - padding;
+    const y = padding;
+    // let x = w - boxW - 20;
+    // let y = 20;
+
+
+    // if (countdown < 3) {
+    //   // Shake the box randomly by a few pixels
+    //   x += (Math.random() - 0.5) * 5;
+    //   y += (Math.random() - 0.5) * 5;
+    // }
+
+
+
+    // Draw the Red Background Box
+    ctx.fillStyle = `rgba(231, 76, 60, ${opacity})`;
+    ctx.beginPath();
+    ctx.rect(x, y, boxW, boxH); 
+    ctx.fill();
+
+    // Draw the Border
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Draw Text
+    ctx.fillStyle = "white";
+    ctx.font = "bold 14px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("STABILITY WARNING", x + boxW / 2, y + 25);
+
+    ctx.font = "bold 24px monospace";
+    // Show countdown with 2 decimal places for intensity
+    ctx.fillText(countdown.toFixed(2) + "s", x + boxW / 2, y + 50);
+
+    ctx.restore();
+  }
+}
 
 
 
@@ -422,4 +513,6 @@ export function renderFrame(canvas, ctx) {
   drawDestinationAndArrow(canvas, ctx);
   drawShip(canvas, ctx);
   drawJoystickVector(canvas, ctx);
+
+  drawGlobalWarning(canvas, ctx); // this is the gobal timer (for orange planets)
 }
