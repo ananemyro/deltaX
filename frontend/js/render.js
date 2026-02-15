@@ -457,7 +457,7 @@ function drawEmergencyBurnCounter(canvas, ctx) {
     burstText = "ORBITAL: UNLIMITED";
   } else if (!canSpaceBurn) {
     statusColor = "#ff4d4d";
-    burstText = "LIMIT HIT: LATCH TO RESET";
+    burstText = "ENGINES LOCKED";
   }
 
   ctx.fillStyle = "#9aa6b2";

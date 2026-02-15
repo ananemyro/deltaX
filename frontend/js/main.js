@@ -24,36 +24,155 @@ if (playBtn && overlay) {
   });
 }
 
+// version when i was implementing the resource updates 
+// async function tick() {
+//   if (sim.state) {
+//     const s = sim.state.hud.status;
+
+//     // ONLY ONE stepping block (and stop stepping if missed)
+//     if (sim.started && !sim.missed && (s === "ready" || s === "running")) {
+//       try {
+//         await apiStep(STEP_DT);
+//         updatePlanetUI();
+//       } catch (e) {
+//         console.error(e);
+//         setStatus("bad", "backend error");
+//       }
+//     }
+//     if (sim.started && !sim.freeze && !sim.missed && (s === "ready" || s === "running")) {
+//       await apiStep(STEP_DT);
+//     }
+
+
+//     updateRenderCamera();
+//     renderFrame(canvas, ctx);
+//     if (missOverlay) {
+//         missOverlay.style.display = sim.missed ? "grid" : "none";
+//     }
+
+//   }
+
+//   requestAnimationFrame(tick);
+// }
+
+
+
+
+// async function tick() {
+//   if (sim.state) {
+//     const s = sim.state.hud.status;
+
+//     // stop stepping if the planet exploded or mission failed
+//     if (sim.started && !sim.missed && s === "running") {
+//         await apiStep(STEP_DT);
+//         await updatePlanetUI();
+//     }
+
+//     // Check for "Game Over" moments
+//     if (s === "failed") {
+//         showFailureOverlay(sim.state.hud.fail_reason);
+//     }
+
+//     updateRenderCamera();
+//     renderFrame(canvas, ctx);
+//   }
+//   requestAnimationFrame(tick);
+// }
+
+// js/main.js
+
+
+
+// async function tick() {
+//   if (sim.state) {
+//     const s = sim.state.hud.status;
+
+//     // 1. Stop physics if the game failed
+//     if (sim.started && !sim.missed && s === "running") {
+//         await apiStep(STEP_DT);
+//         await updatePlanetUI();
+//     }
+
+//     // 2. Trigger the "And then there were none" overlay
+//     if (s === "failed") {
+//         const missOv = document.getElementById("missOverlay");
+//         if (missOv) {
+//             missOv.style.display = "grid"; // Shows the overlay from your screenshot
+//             sim.started = false; // Freezes the ship in place
+//         }
+//     }
+
+//     updateRenderCamera();
+//     renderFrame(canvas, ctx);
+//   }
+//   requestAnimationFrame(tick);
+// }
+
+
+// js/main.js
+
 async function tick() {
   if (sim.state) {
     const s = sim.state.hud.status;
 
-    // ONLY ONE stepping block (and stop stepping if missed)
-    if (sim.started && !sim.missed && (s === "ready" || s === "running")) {
-      try {
-        await apiStep(STEP_DT);
-        updatePlanetUI();
-      } catch (e) {
-        console.error(e);
-        setStatus("bad", "backend error");
-      }
-    }
-    if (sim.started && !sim.freeze && !sim.missed && (s === "ready" || s === "running")) {
-      await apiStep(STEP_DT);
+    // 1. Progress simulation if running
+    if (sim.started && !sim.missed && s === "running") {
+        try {
+            await apiStep(STEP_DT);
+            await updatePlanetUI();
+        } catch (e) {
+            console.error("Backend error during tick:", e);
+        }
     }
 
+    // 2. Trigger the "And then there were none" overlay on failure
+    if (s === "failed") {
+        // Reuse the showFailureOverlay function for specific planet instability text
+        showFailureOverlay(sim.state.hud.fail_reason);
+    }
 
     updateRenderCamera();
     renderFrame(canvas, ctx);
+    
+    // Maintain the "Miss" state overlay as well
     if (missOverlay) {
-        missOverlay.style.display = sim.missed ? "grid" : "none";
+        missOverlay.style.display = (sim.missed || s === "failed") ? "grid" : "none";
     }
-
   }
-
   requestAnimationFrame(tick);
 }
 
+
+
+
+
+function showFailureOverlay(reason) {
+    const missOv = document.getElementById("missOverlay");
+    if (missOv) {
+        // We can reuse the "And then there were none" card for instability
+        missOv.style.display = "grid"; 
+        sim.started = false;
+    }
+}
+
+// function showFailureOverlay(reason) {
+//     const missOv = document.getElementById("missOverlay");
+//     if (missOv && missOv.style.display !== "grid") {
+//         // Stop the simulation movement
+//         sim.started = false; 
+        
+//         // Show the failure overlay
+//         missOv.style.display = "grid";
+
+//         // OPTIONAL: Update the text dynamically to match the failure reason
+//         const line1 = missOv.querySelector(".miss-line1");
+//         const line2 = missOv.querySelector(".miss-line2");
+//         if (line1 && reason === "planet_instability_explosion") {
+//             line1.textContent = "Stability Lost.";
+//             line2.textContent = "The planet's core has collapsed.";
+//         }
+//     }
+// }
 
 
 
