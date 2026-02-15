@@ -177,6 +177,9 @@ def api_plan():
     rocket.vx += dvx
     rocket.vy += dvy
 
+
+
+
     # Handle State Transitions
     if is_latched:
         STATE["latched_planet_id"] = None
@@ -187,6 +190,12 @@ def api_plan():
         STATE["space_burns_left"] -= 1
         STATE["consecutive_burns"] += 1
         
+        # implement fuel deduction after each emergency propulsion
+        # Subtract 10% of total fuel per emergency thrust
+        STATE["fuel"] = max(0, STATE.get("fuel", 100.0) - 10.0)
+
+
+
         # If 3 burns are hit, lock the engines
         if STATE["consecutive_burns"] >= 3:
             STATE["can_space_burn"] = False

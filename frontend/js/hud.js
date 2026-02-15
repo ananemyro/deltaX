@@ -78,7 +78,7 @@ export function updateHUD() {
   // Always update progress fills (smooth 60fps movement)
   el.progressFill.style.width = `${(prog * 100).toFixed(1)}%`;
 
-  const resources = ['crew_health', 'food', 'oxygen', 'fuel'];
+  const resources = ['crew_health', 'food', 'water', 'oxygen', 'fuel'];
   resources.forEach(res => {
     const val = sim.state[res] !== undefined ? sim.state[res] : 100;
     const fillEl = document.getElementById(`${res}Fill`);

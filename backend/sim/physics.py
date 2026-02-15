@@ -282,6 +282,9 @@ def update_resources(dt: float) -> None:
     # (0.05 units per second means ~33 minutes of real-time play)
     STATE["oxygen"] -= 0.05 * dt
     STATE["food"] -= 0.03 * dt
+    STATE["water"] -= 0.04 * dt # New depletion rate
+
+    # 
     
     # 2. Fuel only drops when the rocket is NOT latched (moving through deep space)
     if STATE.get("latched_planet_id") is None:
@@ -292,5 +295,5 @@ def update_resources(dt: float) -> None:
         STATE["crew_survival"] -= 0.5 * dt # Health drops faster than resources
     
     # Clamp everything to 0 so they don't go negative
-    for key in ["oxygen", "food", "fuel", "crew_health"]:
+    for key in ["oxygen", "food", "water", "fuel", "crew_health"]:
         STATE[key] = max(0, STATE[key])
