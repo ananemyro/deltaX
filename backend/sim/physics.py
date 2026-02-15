@@ -103,7 +103,9 @@ def update_reveals_and_collisions(dt: float) -> None:
             p.revealed = True
             STATE["latched_planet_id"] = p.id
 
-            # after orbiting a planet, the consecutive burns should reset 
+            STATE["food"] = max(0.0, STATE.get("food", 100.0) - 10.0)
+
+            # after orbiting a planet, the consecutive burns should reset
             STATE["consecutive_burns"] = 0   # Resets the 3/3 counter to 0/3
             STATE["can_space_burn"] = True    # Unlocks the "Red" lockout
             # STATE["space_burns_left"] = 10    # (Optional) Replenish charges on landing
@@ -117,9 +119,6 @@ def update_reveals_and_collisions(dt: float) -> None:
             if p.kind == "okay":
                 STATE["countdown"] = 10.0
             return
-        
-
-
 
 def check_success_and_bounds() -> None:
     rocket: Rocket = STATE["rocket"]
