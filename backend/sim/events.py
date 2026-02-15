@@ -1,5 +1,11 @@
 import random
 
+
+# -----
+# The "Storyteller." It contains a dictionary of random encounters (like ice mining or hull inspections) 
+# that force the player to trade one resource for another.
+# -----
+
 EVENTS = {
 
     "hull_inspection": {

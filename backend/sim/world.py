@@ -10,6 +10,12 @@ from sim.config import (
     PLANET_RADIUS_RANGE, ZOOM_DEFAULT
 )
 
+# -----
+# Think of this as the The "Map Maker." 
+# It uses a random seed to place "Good" (Blue) and "Okay" (Orange) planets in a corridor between the start and the destination. 
+# we made sure it don't overlap using the is_space_free check.
+# -----
+
 def generate_good_positions(seed: int) -> List[Tuple[float, float]]:
     """
     Hand-curated-ish "corridor" of planets toward the destination,

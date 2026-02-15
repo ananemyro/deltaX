@@ -8,8 +8,23 @@ from sim.config import (
     CRASH_RADIUS_FACTOR,
     MAX_WORLD_ABS, CAM_ALPHA,
 )
+
 from sim.mathutil import dist
 import random
+
+
+# -----
+# This is the "Brain" that calculates movement and survival every millisecond.
+# HANDLES RAW DATA 
+# Movement: Calculating gravitational pull from planets (accel_from_planets).
+
+# Orbits: Managing the stable circular motion when a rocket latches to a planet.
+
+# Survival: Draining Oxygen, Food, and Fuel, and calculating the resulting drop in Morale.
+
+# Game Over: Checking if the rocket has crashed, drifted out of bounds, or if the crew has perished.
+
+# -----
 
 def clamp01_100(v: float) -> float:
     return max(0.0, min(100.0, v))

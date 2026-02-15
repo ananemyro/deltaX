@@ -2,6 +2,9 @@ from typing import Any, Dict
 from sim.models import Rocket, Destination, Camera
 from sim.config import ZOOM_DEFAULT
 
+
+
+
 STATE: Dict[str, Any] = {
     "t": 0.0,
     "rocket": Rocket(x=0.0, y=0.0, vx=3.0, vy=0.6),

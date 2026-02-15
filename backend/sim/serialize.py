@@ -4,6 +4,9 @@ from sim.state import STATE
 from sim.models import Planet, Rocket, Destination, Camera
 from sim.hud import hud
 
+
+# The "Translator." It takes the raw Python objects from the STATE and converts them into a something the web browser will undersatnd
+# This is where the color-coding for planets is determined before being sent to the frontend.
 def serialize_planet(p: Planet) -> Dict[str, Any]:
     if not p.revealed:
             color = "grey"

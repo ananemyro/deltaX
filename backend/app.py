@@ -8,6 +8,9 @@ from sim.state import STATE
 from sim.config import clamp, DT_MIN, DT_MAX, DV_MAX, PLAN_COOLDOWN_S
 from sim.mathutil import norm, unit
 
+# ---------
+# BRIDGE BETWEEN FRONTEND AND BACKEND
+# ---------
 app = Flask(__name__)
 CORS(app)
 

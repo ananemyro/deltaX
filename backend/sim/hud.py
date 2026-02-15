@@ -6,6 +6,9 @@ from sim.mathutil import norm, unit, dist
 from sim.config import clamp
 from sim.models import Rocket, Destination, Planet
 
+
+# The "Data Scientist." It calculates high-level stats for the UI, most importantly the Success Probability, which uses a sigmoid function to guess if the player is currently on a winning trajectory.
+# HERE WE ARE TRANSLATING THOSE NUMBERS INTO SOMETHING THE USER WILL UNDERSTAND
 def compute_success_probability() -> float:
     """
     Heuristic "probability of success" that reacts to alignment, distance,
