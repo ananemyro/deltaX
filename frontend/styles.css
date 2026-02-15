@@ -84,3 +84,50 @@ input[type="range"]{width:100%;}
 .dot.wait{background:rgba(255,255,255,.35);}
 .footerNote{font-size:12px; color:var(--muted); text-align:center;}
 a{color:var(--accent);}
+
+
+/* stabilize flickering numbers */
+/* THE NUCLEAR OPTION: Force every number to a fixed grid */
+#progressText, #speedText, #probText, #speedText2, #probText2, 
+#distText, #timeText, #joystickMag, #burnCountDisplay,
+[id$="Text"] {
+  font-family: 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  letter-spacing: -0.5px; /* Keeps digits tight but locked */
+  display: inline-block;
+  text-align: right;
+}
+
+/* Ensure the sidebar containers don't shift when text changes */
+.kv, .res-item, .resource-block > div {
+  align-items: baseline;
+}
+
+.kv .v, .resource-block .value {
+  min-width: 3.5em; /* Reserve exactly enough space for "100%" */
+}
+
+
+#spaceBurnOverlay {
+  position: absolute;
+  top: 140px;      /* Position below the top HUD pills */
+  left: 20px;
+  z-index: 9999 !important;
+  pointer-events: none;
+  
+  background: rgba(13, 15, 20, 0.85); /* Semi-transparent dark background */
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  padding: 10px 16px;
+  text-align: center;
+  min-width: 100px;
+  display: flex !important;
+  flex-direction: column;
+}
+
+#burnCountDisplay {
+  font-family: monospace;
+  font-size: 32px;
+  font-weight: bold;
+  color: var(--accent); /* Uses your #5fe3ff cyan */
+}

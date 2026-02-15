@@ -124,7 +124,18 @@ def state_payload() -> Dict[str, Any]:
         "camera": asdict(cam),
         "planets": [serialize_planet(p) for p in planets],
         "hud": hud(),
+
         # --- ADD THESE TWO LINES ---
         "latched_planet_id": STATE.get("latched_planet_id"),
         "countdown": STATE.get("countdown", 0.0),
+
+        # --- CRITICAL: Add these lines ---
+        "space_burns_left": STATE.get("space_burns_left", 3),
+        "can_space_burn": STATE.get("can_space_burn", True),
+        
+        "fuel": STATE.get("fuel", 100.0),
+        "oxygen": STATE.get("oxygen", 100.0),
+        "food": STATE.get("food", 100.0),
+        "crew_health": STATE.get("crew_health", 100.0),
+
     }

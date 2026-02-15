@@ -528,6 +528,62 @@ function drawJoystickVector(canvas, ctx) {
   ctx.fill();
 }
 
+function drawEmergencyBurnCounter(canvas, ctx) {
+  if (!sim.state) return;
+
+  const currentBurns = sim.state.space_burns_left ?? 3;
+  const canSpaceBurn = sim.state.can_space_burn ?? true;
+  const isLatched = sim.state.latched_planet_id !== null;
+
+  ctx.save();
+  // Ensure we are drawing in screen space
+  ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
+
+  const w = canvas.getBoundingClientRect().width;
+  const h = canvas.getBoundingClientRect().height;
+
+  // --- POSITION ADJUSTMENT ---
+  const x = 20;
+  const y = h - 80; // This moves it to the bottom-left corner
+
+  // 1. Draw Background Box
+  ctx.fillStyle = "rgba(13, 15, 20, 0.8)";
+  ctx.beginPath();
+  ctx.roundRect(x, y, 140, 60, 8);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+  ctx.stroke();
+
+  // 2. Draw Label
+  ctx.fillStyle = "#9aa6b2";
+  ctx.font = "bold 10px monospace";
+  ctx.fillText("EMERGENCY THRUST", x + 10, y + 20);
+
+  // 3. Draw Number & Status
+  let statusColor = "#5fe3ff";
+  let statusText = "READY";
+
+  if (isLatched) {
+    statusColor = "#6dff57";
+    statusText = "ORBITAL: UNLIMITED";
+  } else if (!canSpaceBurn) {
+    statusColor = "#ff4d4d";
+    statusText = "COOLDOWN";
+  }
+
+  ctx.fillStyle = statusColor;
+  ctx.font = "bold 28px monospace";
+  ctx.fillText(currentBurns, x + 10, y + 45);
+
+  ctx.font = "bold 9px monospace";
+  ctx.fillText(statusText, x + 40, y + 45);
+
+  ctx.restore();
+}
+
+
+
+
 export function renderFrame(canvas, ctx) {
   if (!sim.state) return;
 
@@ -537,16 +593,16 @@ export function renderFrame(canvas, ctx) {
   ctx.clearRect(0, 0, w, h);
   drawStars(canvas, ctx);
   drawTrail(canvas, ctx);
-
   drawPlanets(canvas, ctx);
 
   // Draw Earth destination BEFORE the arrow helper
   drawEarthDestination(canvas, ctx);
 
   drawDestinationAndArrow(canvas, ctx);
-
   drawShip(canvas, ctx);
   drawJoystickVector(canvas, ctx);
 
-  drawGlobalWarning(canvas, ctx);
+  drawGlobalWarning(canvas, ctx); // this is the gobal timer (for orange planets)
+
+  drawEmergencyBurnCounter(canvas, ctx);
 }

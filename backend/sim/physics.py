@@ -245,3 +245,46 @@ def update_camera() -> None:
         if (dx * dx + dy * dy) > (SNAP_DIST * SNAP_DIST):
             cam.cx = rocket.x
             cam.cy = rocket.y
+
+
+# this is about the 3-times allowed propulsion (out of orbit)
+def apply_propulsion(dvx, dvy):
+    is_latched = STATE.get("latched_planet_id") is not None
+    
+    if is_latched:
+        # Standard propulsion: Always allowed in orbit
+        STATE["rocket"].vx += dvx
+        STATE["rocket"].vy += dvy
+        # Once you launch from orbit, you are back in space
+        STATE["latched_planet_id"] = None 
+        # Reset the space burn cooldown so you can use one immediately if needed
+        STATE["can_space_burn"] = True 
+        
+    elif STATE["space_burns_left"] > 0 and STATE["can_space_burn"]:
+        # Emergency Space Burn: Allowed only 3 times, not in a row
+        STATE["rocket"].vx += dvx
+        STATE["rocket"].vy += dvy
+        STATE["space_burns_left"] -= 1
+        STATE["can_space_burn"] = False # Lock the next space burn
+    else:
+        # Action blocked: Either out of charges or cooldown active
+        pass
+
+# 
+def update_resources(dt: float) -> None:
+    # 1. Oxygen and Food drop slowly over time
+    # (0.05 units per second means ~33 minutes of real-time play)
+    STATE["oxygen"] -= 0.05 * dt
+    STATE["food"] -= 0.03 * dt
+    
+    # 2. Fuel only drops when the rocket is NOT latched (moving through deep space)
+    if STATE.get("latched_planet_id") is None:
+        STATE["fuel"] -= 0.01 * dt
+
+    # 3. Crew Health starts dropping if Oxygen or Food hits 0
+    if STATE["oxygen"] <= 0 or STATE["food"] <= 0:
+        STATE["crew_survival"] -= 0.5 * dt # Health drops faster than resources
+    
+    # Clamp everything to 0 so they don't go negative
+    for key in ["oxygen", "food", "fuel", "crew_health"]:
+        STATE[key] = max(0, STATE[key])

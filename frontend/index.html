@@ -4,13 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>deltaX</title>
-
   <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
   <div class="wrap">
-    <!-- Stage -->
     <div class="stage">
       <canvas id="c"></canvas>
 
@@ -36,23 +33,19 @@
       </div>
     </div>
 
-    <!-- Side panel -->
     <div class="side">
       <div class="card">
         <div class="row">
-          <div>
-            <div class="title">Mission Status</div>
-          </div>
+          <div><div class="title">Mission Status</div></div>
           <div class="statusPill" id="statusPill">
             <span class="dot wait" id="statusDot"></span>
             <span id="statusText">ready</span>
           </div>
         </div>
-
         <div style="display:flex; gap:10px; margin-top:12px;">
           <button class="danger" id="resetBtn" style="flex:1;">↺ Reset</button>
         </div>
-       </div>
+      </div>
 
       <div class="card">
         <div class="title">Mission Control</div>
@@ -63,8 +56,45 @@
       </div>
 
       <div class="card">
-        <div class="title">Journey Progress</div>
+        <div class="title">Life Support & Resources</div>
+        <div class="resource-block" style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+          
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="label" style="width:75px; flex-shrink:0;">Crew</span>
+            <div class="progressBar" style="flex-grow:1; height:6px;">
+              <div class="progressFill health" id="crew_healthFill" style="width:100%;"></div>
+            </div>
+            <span class="value" id="crew_healthText" style="width:35px; text-align:right; font-size:0.85em;">100%</span>
+          </div>
 
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="label" style="width:75px; flex-shrink:0;">Oxygen</span>
+            <div class="progressBar" style="flex-grow:1; height:6px;">
+              <div class="progressFill oxy" id="oxygenFill" style="width:100%;"></div>
+            </div>
+            <span class="value" id="oxygenText" style="width:35px; text-align:right; font-size:0.85em;">100%</span>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="label" style="width:75px; flex-shrink:0;">Food</span>
+            <div class="progressBar" style="flex-grow:1; height:6px;">
+              <div class="progressFill food" id="foodFill" style="width:100%;"></div>
+            </div>
+            <span class="value" id="foodText" style="width:35px; text-align:right; font-size:0.85em;">100%</span>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="label" style="width:75px; flex-shrink:0;">Fuel</span>
+            <div class="progressBar" style="flex-grow:1; height:6px;">
+              <div class="progressFill fuel" id="fuelFill" style="width:100%;"></div>
+            </div>
+            <span class="value" id="fuelText" style="width:35px; text-align:right; font-size:0.85em;">100%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="title">Journey Progress</div>
         <div class="kv" style="margin-top:10px;">
           <div class="k">Distance to destination</div><div class="v" id="distText">—</div>
           <div class="k">Speed</div><div class="v" id="speedText2">—</div>

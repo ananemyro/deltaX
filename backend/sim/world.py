@@ -70,6 +70,15 @@ def reset_world(seed: Optional[int] = None) -> None:
     STATE["latched_planet_id"] = None
     STATE["countdown"] = 10.0
 
+    STATE["space_burns_left"] = 3
+    STATE["can_space_burn"] = True
+    
+    STATE["fuel"] = 100.0
+    STATE["oxygen"] = 100.0
+    STATE["food"] = 100.0
+    STATE["crew_health"] = 100.0
+
+
     rocket = Rocket(
         x=0.0,
         y=0.0,

@@ -3,22 +3,17 @@ import { sim } from "./state.js";
 const el = {};
 
 const AU_KM = 149_597_870.7;
-const KM_PER_UNIT = 1_000_000;              // tweak this
-const JOURNEY_SEC_PER_SIM_SEC = 86_400;     // tweak this
+const KM_PER_UNIT = 1_000_000;
+const JOURNEY_SEC_PER_SIM_SEC = 86_400;
+
+let hudFrameCount = 0;
+let lastBurnCount = 3;
 
 function formatJourneyTimeDays(days) {
   if (days < 60) return `${days.toFixed(1)} d`;
   const years = days / 365.25;
   if (years < 2) return `${(days / 30.44).toFixed(1)} mo`;
   return `${years.toFixed(2)} yr`;
-}
-
-function unitsToKm(units) {
-  return units * KM_PER_UNIT;
-}
-
-function speedUnitsToKmPerSec(vUnitsPerSimSec) {
-  return vUnitsPerSimSec * KM_PER_UNIT / JOURNEY_SEC_PER_SIM_SEC;
 }
 
 function simTimeToDays(tSimSec) {
@@ -38,6 +33,11 @@ export function initHUD() {
 
   el.statusDot = document.getElementById("statusDot");
   el.statusText = document.getElementById("statusText");
+
+  // New Emergency Burn Elements
+  el.burnOverlay = document.getElementById("spaceBurnOverlay");
+  el.burnCount = document.getElementById("burnCountDisplay");
+  el.burnStatus = document.getElementById("burnStatus");
 }
 
 function clamp(v, lo, hi) {
@@ -52,45 +52,98 @@ export function setStatus(kind, text) {
 export function updateHUD() {
   if (!sim.state) return;
 
+  // 1. DATA EXTRACTION
   const dUnits = sim.state.hud.distance_to_destination;
   const vUnits = sim.state.hud.speed;
+  const p = sim.state.hud.success_probability;
+  const tSimSec = sim.state.t;
 
   if (sim.initialDistance == null) sim.initialDistance = dUnits;
   if (sim.initialSpeed == null) sim.initialSpeed = vUnits;
 
-  const p = sim.state.hud.success_probability;
-
-  // anchored display targets
+  // 2. UNIT CONVERSIONS & PROGRESS
   const START_DISTANCE_AU = 10.0;
   const START_SPEED_KMS = 30.0;
 
-  // Display conversions
   const dAU = START_DISTANCE_AU * (dUnits / Math.max(1e-6, sim.initialDistance));
   const vKmS = START_SPEED_KMS * (vUnits / Math.max(1e-6, sim.initialSpeed));
   const dKm = dAU * AU_KM;
-  const tDays = simTimeToDays(sim.state.t);
-
-  if (sim.initialDistance == null) sim.initialDistance = dUnits;
+  const tDays = simTimeToDays(tSimSec);
   const prog = clamp(1 - dUnits / Math.max(1e-6, sim.initialDistance), 0, 1);
 
+  // 3. VISUAL THROTTLING (To fix the "glowy/wobble" jitter)
+  hudFrameCount++;
+  const shouldUpdateText = hudFrameCount % 4 === 0;
+
+  // Always update progress fills (smooth 60fps movement)
   el.progressFill.style.width = `${(prog * 100).toFixed(1)}%`;
-  el.progressText.textContent = `${Math.round(prog * 100)}%`;
 
-  el.probText.textContent = `${Math.round(p * 100)}%`;
-  el.probText2.textContent = `${Math.round(p * 100)}%`;
+  const resources = ['crew_health', 'food', 'oxygen', 'fuel'];
+  resources.forEach(res => {
+    const val = sim.state[res] !== undefined ? sim.state[res] : 100;
+    const fillEl = document.getElementById(`${res}Fill`);
+    if (fillEl) fillEl.style.width = `${val}%`;
+  });
 
-  el.speedText.textContent = vKmS.toFixed(1);
-  el.speedText2.textContent = vKmS.toFixed(1);
+  // Only update Text and Tactical Overlays every 4 frames to stabilize the display
+  if (shouldUpdateText) {
+    // Top & Journey Text
+    el.progressText.textContent = `${Math.round(prog * 100)}%`;
+    el.speedText.textContent = vKmS.toFixed(1);
+    el.speedText2.textContent = vKmS.toFixed(1);
+    el.probText.textContent = `${Math.round(p * 100)}%`;
+    el.probText2.textContent = `${Math.round(p * 100)}%`;
+    el.distText.textContent = Math.round(dKm).toLocaleString();
+    el.timeText.textContent = formatJourneyTimeDays(tDays);
 
-  el.distText.textContent = dKm.toFixed(0);
-  el.timeText.textContent = formatJourneyTimeDays(tDays);
+    // Survival Resource Text
+    resources.forEach(res => {
+      const val = sim.state[res] !== undefined ? sim.state[res] : 100;
+      const textEl = document.getElementById(`${res}Text`);
+      const fillEl = document.getElementById(`${res}Fill`);
+      
+      if (textEl) textEl.textContent = `${Math.round(val)}%`;
+      if (fillEl && res === 'crew_health') {
+        if (val < 30) fillEl.classList.add('critical');
+        else fillEl.classList.remove('critical');
+      }
+    });
 
+    // Emergency Burn Overlay Logic
+    const currentBurns = sim.state.space_burns_left ?? 3;
+    const canSpaceBurn = sim.state.can_space_burn ?? true;
+    const isLatched = sim.state.latched_planet_id !== null;
+
+    if (el.burnCount) el.burnCount.textContent = currentBurns;
+
+    // Trigger Flash if burn count decreased
+    if (currentBurns < lastBurnCount && el.burnOverlay) {
+      el.burnOverlay.classList.remove("flash-red");
+      void el.burnOverlay.offsetWidth; // Force reflow for animation restart
+      el.burnOverlay.classList.add("flash-red");
+    }
+    lastBurnCount = currentBurns;
+
+    // Status Indicator
+    if (el.burnStatus) {
+      if (isLatched) {
+        el.burnStatus.textContent = "ORBITAL: UNLIMITED";
+        el.burnStatus.style.color = "var(--good)";
+      } else if (!canSpaceBurn) {
+        el.burnStatus.textContent = "COOLDOWN: LATCH TO RESET";
+        el.burnStatus.style.color = "var(--bad)";
+      } else {
+        el.burnStatus.textContent = "READY";
+        el.burnStatus.style.color = "var(--accent)";
+      }
+    }
+  }
+
+  // 5. UPDATE MISSION STATUS
   if (sim.state.hud.status === "success") {
     setStatus("good", "success");
-    sim.running = true;
   } else if (sim.state.hud.status === "failed") {
     setStatus("bad", "failed");
-    sim.running = true;
   } else {
     setStatus(sim.running ? "run" : "wait", sim.running ? "running" : "ready");
   }
