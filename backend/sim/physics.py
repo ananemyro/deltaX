@@ -4,9 +4,9 @@ from typing import Tuple, List
 from sim.state import STATE
 from sim.models import Rocket, Planet, Destination, Camera
 from sim.config import (
-    G, SOFTENING_R2, REVEAL_MARGIN,
-    CRASH_RADIUS_FACTOR, DEATH_RADIUS_FACTOR,
-    MAX_WORLD_ABS, CAM_ALPHA, LOOKAHEAD
+    G, SOFTENING_R2,
+    CRASH_RADIUS_FACTOR,
+    MAX_WORLD_ABS, CAM_ALPHA,
 )
 from sim.mathutil import dist
 import random
@@ -73,7 +73,7 @@ def update_morale_from_low_stats(dt: float) -> None:
         STATE["morale"] = clamp01_100(morale)
         return
 
-    # Normal logic (your existing one)
+    # Normal logic
     oxygen = float(STATE.get("oxygen", 100.0))
     food = float(STATE.get("food", 100.0))
     ship = float(STATE.get("ship_health", 100.0))
@@ -81,32 +81,14 @@ def update_morale_from_low_stats(dt: float) -> None:
     fuel = float(STATE.get("fuel", 100.0))
 
     pen = 0.0
-    # if oxygen < 60: pen += 5.0
-    if oxygen < 30: pen += 5.0  # only start worrying about fuel when its less then 30%
-
-    # if food < 60: pen += 12.0
+    if oxygen < 30: pen += 5.0  # only start worrying about fuel when its less than 30%
     if food < 30: pen += 25.0
-
-    # if water < 60: pen += 12.0
-    # if water < 30: pen += 25.0
-
-    # if ship < 60: pen += 18.0
     if ship < 30: pen += 3.0
 
-    # Fuel affects morale too
-    # if fuel < 60: pen += 12.0
-    if fuel < 50: pen += 3.0    # only start worrying about fuel when its less then 30%
-    # if fuel < 30: pen += 10.0
-
-    # # Extra brutal if oxygen is REALLY low
-    # if oxygen < 25.0:
-    #     pen += 15.0
+    if fuel < 50: pen += 3.0    # only start worrying about fuel when its less than 30%
 
     morale -= pen * dt
     STATE["morale"] = clamp01_100(morale)
-
-
-
 
 def maybe_create_latch_event(planet_id: str) -> None:
     if STATE.get("pending_event") is not None:
@@ -159,7 +141,6 @@ def maybe_create_latch_event(planet_id: str) -> None:
 
 
 def accel_from_planets(rocket: Rocket, planets: List[Planet]) -> Tuple[float, float]:
-
     # If latched, gravity doesn't move us (we are stuck)
     if STATE.get("latched_planet_id") is not None:
         return 0.0, 0.0
@@ -175,8 +156,6 @@ def accel_from_planets(rocket: Rocket, planets: List[Planet]) -> Tuple[float, fl
         ax += a * dx / r
         ay += a * dy / r
     return ax, ay
-
-
 
 # ------------------
 #   1. Check if you are already in orbit
@@ -211,7 +190,6 @@ def update_reveals_and_collisions(dt: float) -> None:
         # Orbital Physics
         dx, dy = rocket.x - p.x, rocket.y - p.y
         r = math.sqrt(dx * dx + dy * dy)
-        # orbital_speed = math.sqrt(2 * G * p.mass / r)   # this is the escape velocity
         orbital_speed = math.sqrt(G * p.mass / r)     # take out the factor of 2, to slow down the simulation
         tx, ty = dy / r, -dx / r # Tangent vector
         
@@ -281,9 +259,7 @@ def update_reveals_and_collisions(dt: float) -> None:
             # after orbiting a planet, the consecutive burns should reset
             STATE["consecutive_burns"] = 0   # Resets the 3/3 counter to 0/3
             STATE["can_space_burn"] = True    # Unlocks the "Red" lockout
-            # STATE["space_burns_left"] = 10    # (Optional) Replenish charges on landing
             if STATE.get("pending_event") is None:
-                # (optional) only ask on good planets to match your current UI
                 if p.kind == "good":
                     maybe_create_latch_event(p.id)
 
@@ -312,10 +288,6 @@ def check_success_and_bounds() -> None:
         STATE["status"] = "failed"
         STATE["fail_reason"] = "out_of_bounds"
         return
-
-
-
-
 
 def step_sim(dt: float) -> None:
     if STATE["status"] != "running":
@@ -353,50 +325,6 @@ def step_sim(dt: float) -> None:
         check_success_and_bounds()
 
     update_camera()
-
-
-# def update_camera() -> None:
-#     rocket: Rocket = STATE["rocket"]
-#     cam: Camera = STATE["camera"]
-
-#     # 1. Check if we are currently latched
-#     is_latched = STATE.get("latched_planet_id") is not None
-
-#     vx, vy = rocket.vx, rocket.vy
-#     speed = math.hypot(vx, vy)
-
-#     # 2. Adjust Lookahead
-#     # If flying: Look ahead by 220 units. 
-#     # If latched: Set to 0 so the camera centers on the rocket/planet.
-#     MAX_AHEAD = 0.0 if is_latched else 220.0
-
-#     if speed > 1e-6:
-#         ux, uy = vx / speed, vy / speed
-#     else:
-#         ux, uy = 0.0, 0.0
-
-#     ahead = min(MAX_AHEAD, 6.0 * speed)
-#     target_x = rocket.x + ux * ahead
-#     target_y = rocket.y + uy * ahead
-
-#     # 3. Dynamic Smoothing (Alpha)
-#     # If latched, we use a much smaller alpha (0.03) to make the camera 
-#     # "drift" slowly into position rather than snapping.
-#     alpha = 0.03 if is_latched else CAM_ALPHA 
-    
-#     cam.cx += (target_x - cam.cx) * alpha
-#     cam.cy += (target_y - cam.cy) * alpha
-
-#     # 4. Remove or increase the "Safety Snap"
-#     # The safety snap usually causes the biggest "jerk"
-#     SNAP_DIST = 800.0 # Increase this so it doesn't trigger during smooth orbits
-#     dx = rocket.x - cam.cx
-#     dy = rocket.y - cam.cy
-#     if (dx * dx + dy * dy) > (SNAP_DIST * SNAP_DIST):
-#         cam.cx = rocket.x
-#         cam.cy = rocket.y
-
-
 
 def update_camera() -> None:
     rocket: Rocket = STATE["rocket"]
@@ -476,8 +404,6 @@ def update_resources(dt: float) -> None:
 
     STATE["food"] -= 0.03 * dt
 
-    # 
-    
     # 2. Fuel only drops when the rocket is NOT latched (moving through deep space)
     if STATE.get("latched_planet_id") is None:
         STATE["fuel"] -= 0.01 * dt
@@ -494,39 +420,3 @@ def update_resources(dt: float) -> None:
     # Clamp everything to 0 so they don't go negative
     for key in ["oxygen", "food", "water", "fuel", "crew_health"]:
         STATE[key] = max(0, STATE[key])
-
-
-# def step_sim(dt: float) -> None:
-#     if STATE["status"] != "running":
-#         return
-
-#     update_resources(dt)
-#     arm_grace_counters_if_needed()
-#     check_instant_gameover()
-    
-#     if STATE["status"] != "running":
-#         return
-
-#     if STATE.get("pending_event") is not None:
-#         update_camera()
-#         return
-
-#     update_reveals_and_collisions(dt)
-
-#     if STATE.get("latched_planet_id") is None:
-#         ax, ay = accel_from_planets(STATE["rocket"], STATE["planets"])
-#         rocket = STATE["rocket"]
-#         rocket.vx += ax * dt
-#         rocket.vy += ay * dt
-#         rocket.x += rocket.vx * dt
-#         rocket.y += rocket.vy * dt
-
-#     STATE["t"] += dt
-#     if STATE["status"] == "running":
-#         check_success_and_bounds()
-
-#     # ADD THIS LINE HERE:
-#     update_morale_from_low_stats(dt) 
-#     update_camera()
-
-

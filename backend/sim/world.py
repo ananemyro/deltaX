@@ -52,12 +52,6 @@ def is_space_free(x: float, y: float, radius: float, existing_planets: List[Plan
             return False
     return True
 
-
-
-
-
-
-
 def reset_world(seed: Optional[int] = None) -> None:
     seed = int(seed) if seed is not None else random.randint(1, 10_000_000)
     rng = random.Random(seed)
@@ -137,7 +131,6 @@ def reset_world(seed: Optional[int] = None) -> None:
                 p_kind, p_color, p_recoverable = "okay", "#FF991c", True
                 p_mass = rng.uniform(*BAD_MASS_RANGE)
 
-
             # 6. Add to list and increment pid
             planets.append(
                 Planet(
@@ -147,8 +140,6 @@ def reset_world(seed: Optional[int] = None) -> None:
                 )
             )
             pid += 1
-
-
 
     # Shuffle positions slightly so good/bad aren't visually patterned
     rng.shuffle(planets)

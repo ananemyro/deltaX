@@ -1,4 +1,3 @@
-# sim/events.py
 import random
 
 EVENTS = {
@@ -29,4 +28,3 @@ EVENTS = {
 def get_random_event():
     event_id = random.choice(list(EVENTS.keys()))
     return {"id": event_id, **EVENTS[event_id]}
-

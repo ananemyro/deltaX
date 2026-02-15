@@ -87,8 +87,6 @@ export function updateHUD() {
       successShown = true;
     }
 
-
-
   const progShown = done ? 1 : prog;
   const pShown = done ? 1 : p;
 

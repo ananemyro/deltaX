@@ -1,4 +1,3 @@
-// js/main.js
 import { STEP_DT } from "./config.js";
 import { sim } from "./state.js";
 import { initCanvas, updateRenderCamera } from "./canvas.js";
@@ -78,10 +77,6 @@ async function tick() {
   requestAnimationFrame(tick);
 }
 
-
-
-
-
 function showFailureOverlay(reason) {
     const missOv = document.getElementById("missOverlay");
     if (missOv) {
@@ -90,27 +85,6 @@ function showFailureOverlay(reason) {
         sim.started = false;
     }
 }
-
-// function showFailureOverlay(reason) {
-//     const missOv = document.getElementById("missOverlay");
-//     if (missOv && missOv.style.display !== "grid") {
-//         // Stop the simulation movement
-//         sim.started = false;
-
-//         // Show the failure overlay
-//         missOv.style.display = "grid";
-
-//         // OPTIONAL: Update the text dynamically to match the failure reason
-//         const line1 = missOv.querySelector(".miss-line1");
-//         const line2 = missOv.querySelector(".miss-line2");
-//         if (line1 && reason === "planet_instability_explosion") {
-//             line1.textContent = "Stability Lost.";
-//             line2.textContent = "The planet's core has collapsed.";
-//         }
-//     }
-// }
-
-
 
 (async function boot() {
   setStatus("wait", "connecting...");
@@ -192,10 +166,6 @@ function initPlanetMenu() {
     sim.started = true;
   };
 }
-
-
-
-
 
 // Call this once during bootup
 initPlanetMenu();

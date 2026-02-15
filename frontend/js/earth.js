@@ -1,7 +1,3 @@
-// earth.js
-// Static Earth texture: generated ONCE per seed at fixed resolution, then scaled.
-// No rotation, no per-frame regeneration.
-
 function clamp01(x){ return Math.max(0, Math.min(1, x)); }
 function lerp(a,b,t){ return a + (b-a)*t; }
 
