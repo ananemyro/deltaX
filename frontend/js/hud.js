@@ -102,7 +102,9 @@ export function updateHUD() {
   resources.forEach((res) => {
     const val = sim.state[res] !== undefined ? sim.state[res] : 100;
     const fillEl = document.getElementById(`${res}Fill`);
+    const textEl = document.getElementById(`${res}Text`);
     if (fillEl) fillEl.style.width = `${val}%`;
+    if (textEl) textEl.textContent = `${Math.round(val)}%`;
   });
 
   if (shouldUpdateText) {

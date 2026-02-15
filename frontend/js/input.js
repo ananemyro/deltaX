@@ -10,18 +10,24 @@ const TARGET_MAX_G = 1.0;
 const DV_UNITS_ARE_KMS = true;
 
 function plannedDvMag(mag) {
+  // Unclamped magnitude would be JOY_GAIN * mag, then clamp to JOY_DV_MAX
   return Math.min(JOY_DV_MAX, JOY_GAIN * mag);
 }
 
 function dvToG(dv) {
+  // Convert dv to m/s if we’re interpreting dv as km/s
   const dv_mps = DV_UNITS_ARE_KMS ? dv * 1000 : dv;
 
+  // Pick burn time so that dvMax maps to TARGET_MAX_G
   const dvMax = plannedDvMag(1.0);
   const dvMax_mps = DV_UNITS_ARE_KMS ? dvMax * 1000 : dvMax;
+
+  // Avoid divide-by-zero if dvMax is 0
   if (dvMax_mps <= 1e-9) return 0.0;
 
   const burnSec = dvMax_mps / (TARGET_MAX_G * G0);
   const a_mps2 = dv_mps / burnSec;
+
   return a_mps2 / G0;
 }
 
@@ -74,6 +80,10 @@ export function initInput() {
       sim.initialDistance = null;
       sim.initialSpeed = null;
 
+      if (window.visitedPlanets) {
+          window.visitedPlanets.clear();
+        }
+
       // Keep the game usable immediately after reset
       sim.started = true;
 
@@ -81,7 +91,6 @@ export function initInput() {
       setKnob(joystick, knob, 0, 0);
       joystickMag.textContent = "0.00 g";
     });
-
 
   joystick.addEventListener("pointerdown", (evt) => {
     sim.joyActive = true;
