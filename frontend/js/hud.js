@@ -172,5 +172,3 @@ export function updateHUD() {
     setStatus(sim.running ? "run" : "wait", sim.running ? "running" : "ready");
   }
 }
-
-

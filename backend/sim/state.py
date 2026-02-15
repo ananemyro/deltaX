@@ -21,6 +21,7 @@ STATE: Dict[str, Any] = {
     "ship_health":  100.0,
     "food": 100.0,
     "water": 100.0,
+    
     "oxygen": 100.0,
     "fuel": 100.0,
     "morale": 100.0,

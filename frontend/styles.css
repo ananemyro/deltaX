@@ -329,3 +329,29 @@ a{color:var(--accent);}
   padding: 14px 16px;
   font-weight:800;
 }
+
+
+
+/* Caution pulse: 50% - 30% */
+@keyframes pulse-caution {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.02); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* Danger pulse: < 30% */
+@keyframes pulse-danger {
+  0% { color: #fff; text-shadow: 0 0 5px #ff4d4d; }
+  50% { color: #ff4d4d; text-shadow: 0 0 15px #ff0000; }
+  100% { color: #fff; text-shadow: 0 0 5px #ff4d4d; }
+}
+
+.hud-caution {
+  animation: pulse-caution 1.5s infinite ease-in-out;
+  color: #f1c40f; /* Yellowish */
+}
+
+.hud-danger {
+  animation: pulse-danger 0.6s infinite ease-in-out;
+  color: #ff4d4d !important; /* Force Red */
+}

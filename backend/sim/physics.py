@@ -58,6 +58,7 @@ def apply_morale_on_latch(kind: str) -> None:
     STATE["morale"] = clamp01_100(morale)
 
 
+# this is making the moral of the crew ship st it depends on the % of other resources
 def update_morale_from_low_stats(dt: float) -> None:
     morale = float(STATE.get("morale", 100.0))
 
@@ -80,29 +81,31 @@ def update_morale_from_low_stats(dt: float) -> None:
     fuel = float(STATE.get("fuel", 100.0))
 
     pen = 0.0
-    if oxygen < 60: pen += 20.0
-    if oxygen < 30: pen += 40.0
+    # if oxygen < 60: pen += 5.0
+    if oxygen < 30: pen += 5.0  # only start worrying about fuel when its less then 30%
 
-    if food < 60: pen += 12.0
+    # if food < 60: pen += 12.0
     if food < 30: pen += 25.0
 
-    if water < 60: pen += 12.0
-    if water < 30: pen += 25.0
+    # if water < 60: pen += 12.0
+    # if water < 30: pen += 25.0
 
-    if ship < 60: pen += 18.0
-    if ship < 30: pen += 35.0
+    # if ship < 60: pen += 18.0
+    if ship < 30: pen += 3.0
 
     # Fuel affects morale too
-    if fuel < 60: pen += 12.0
-    if fuel < 30: pen += 25.0
-    if fuel < 10: pen += 45.0
+    # if fuel < 60: pen += 12.0
+    if fuel < 50: pen += 3.0    # only start worrying about fuel when its less then 30%
+    # if fuel < 30: pen += 10.0
 
-    # Extra brutal if oxygen is REALLY low
-    if oxygen < 25.0:
-        pen += 15.0
+    # # Extra brutal if oxygen is REALLY low
+    # if oxygen < 25.0:
+    #     pen += 15.0
 
     morale -= pen * dt
     STATE["morale"] = clamp01_100(morale)
+
+
 
 
 def maybe_create_latch_event(planet_id: str) -> None:
@@ -300,11 +303,16 @@ def step_sim(dt: float) -> None:
     if STATE["status"] != "running":
         return
 
-    # Always tick resources + gameover, even if a prompt is open
+    # 1. Update resources and Morale FIRST
     update_resources(dt)
+    update_morale_from_low_stats(dt) # Move this up here!
+    
+    # 2. THEN check if these caused a game over
     arm_grace_counters_if_needed()
     check_instant_gameover()
+    
     if STATE["status"] != "running":
+        # Now the Morale will have updated one last time before we exit
         return
 
     # If an event prompt is up, pause physics, but keep the world “alive”
@@ -441,13 +449,14 @@ def apply_propulsion(dvx, dvy):
 # 
 def update_resources(dt: float) -> None:
     # DEBUG: super fast oxygen drain
-    DEBUG_FAST_OXYGEN = False
+    DEBUG_FAST_OXYGEN = False 
     if DEBUG_FAST_OXYGEN:
         STATE["oxygen"] -= 200.0 * dt  # hits 0 in ~0.5 sec
     else:
         STATE["oxygen"] -= 0.05 * dt
     # 1. Oxygen and Food drop slowly over time
     # (0.05 units per second means ~33 minutes of real-time play)
+
     STATE["food"] -= 0.03 * dt
 
     # 
@@ -458,7 +467,7 @@ def update_resources(dt: float) -> None:
 
     # 3. Crew Health starts dropping if Oxygen or Food hits 0
     if STATE["oxygen"] <= 0 or STATE["food"] <= 0:
-        STATE["crew_survival"] -= 0.5 * dt # Health drops faster than resources
+        STATE["crew_health"] -= 0.5 * dt # Health drops faster than resources
 
     if STATE.get("water_recycler_broken", False):
         STATE["water"] -= 0.10 * dt  # faster drain
@@ -468,3 +477,39 @@ def update_resources(dt: float) -> None:
     # Clamp everything to 0 so they don't go negative
     for key in ["oxygen", "food", "water", "fuel", "crew_health"]:
         STATE[key] = max(0, STATE[key])
+
+
+# def step_sim(dt: float) -> None:
+#     if STATE["status"] != "running":
+#         return
+
+#     update_resources(dt)
+#     arm_grace_counters_if_needed()
+#     check_instant_gameover()
+    
+#     if STATE["status"] != "running":
+#         return
+
+#     if STATE.get("pending_event") is not None:
+#         update_camera()
+#         return
+
+#     update_reveals_and_collisions(dt)
+
+#     if STATE.get("latched_planet_id") is None:
+#         ax, ay = accel_from_planets(STATE["rocket"], STATE["planets"])
+#         rocket = STATE["rocket"]
+#         rocket.vx += ax * dt
+#         rocket.vy += ay * dt
+#         rocket.x += rocket.vx * dt
+#         rocket.y += rocket.vy * dt
+
+#     STATE["t"] += dt
+#     if STATE["status"] == "running":
+#         check_success_and_bounds()
+
+#     # ADD THIS LINE HERE:
+#     update_morale_from_low_stats(dt) 
+#     update_camera()
+
+
