@@ -207,11 +207,12 @@ a{color:var(--accent);}
   color: rgba(255,255,255,0.90);
 }
 
-.intro-card h1{
-  margin: 0 0 12px;
-  font-size: 30px;
-  color: #fff;
-  letter-spacing: 0.3px;
+
+#burnCountDisplay {
+  font-family: monospace;
+  font-size: 32px;
+  font-weight: bold;
+  color: var(--accent); /* Uses your #5fe3ff cyan */
 }
 
 .intro-card ul{
@@ -242,8 +243,8 @@ a{color:var(--accent);}
 .intro-play:hover{ filter: brightness(1.12); }
 .intro-play:active{ transform: translateY(1px); }
 
-/* hard override: overlay ALWAYS on top */
 .stage { position: relative; }
+
 .intro-overlay {
   z-index: 2147483647 !important;
 }

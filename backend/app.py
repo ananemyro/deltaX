@@ -108,7 +108,50 @@ def api_reset():
 #     return jsonify(state_payload())
 
 
-# versio2 : allowing multiple consecutive propulsion
+# versio2 : cool, but still not perfect
+# @app.post("/api/plan")
+# def api_plan():
+#     if STATE["status"] != "running":
+#         return jsonify(state_payload())
+
+#     data = request.get_json(silent=True) or {}
+#     t = float(STATE["t"])
+#     rocket = STATE["rocket"]
+#     is_latched = STATE.get("latched_planet_id") is not None
+
+#     # --- UPDATED PROPULSION LOGIC ---
+#     if not is_latched:
+#         total_left = STATE.get("space_burns_left", 0)
+#         burst_count = STATE.get("consecutive_burns", 0)
+        
+#         # Check total pool (10) and burst limit (3)
+#         if total_left <= 0 or burst_count >= 3:
+#             return jsonify(state_payload())
+
+#     # Apply Velocity
+#     dvx = float(data.get("dvx", 0.0))
+#     dvy = float(data.get("dvy", 0.0))
+#     rocket.vx += dvx
+#     rocket.vy += dvy
+
+#     # Handle State Transitions
+#     if is_latched:
+#         STATE["latched_planet_id"] = None
+#         STATE["consecutive_burns"] = 0   # Reset when taking off from a planet
+#         STATE["can_space_burn"] = True
+#     else:
+#         # Increment the burst count
+#         STATE["consecutive_burns"] = STATE.get("consecutive_burns", 0) + 1 
+#         STATE["space_burns_left"] -= 1
+        
+#         # If 3 burns are hit, lock the engines
+#         if STATE["consecutive_burns"] >= 3:
+#             STATE["can_space_burn"] = False
+            
+#     STATE["last_plan_time"] = t
+#     return jsonify(state_payload())
+
+# Version that works!
 @app.post("/api/plan")
 def api_plan():
     if STATE["status"] != "running":
@@ -134,21 +177,32 @@ def api_plan():
     rocket.vx += dvx
     rocket.vy += dvy
 
+
+
+
     # Handle State Transitions
     if is_latched:
         STATE["latched_planet_id"] = None
-        STATE["consecutive_burns"] = 0   # Reset burst on latch
+        STATE["consecutive_burns"] = 0   # Reset when taking off from a planet
         STATE["can_space_burn"] = True
     else:
-        STATE["space_burns_left"] -= 1   # Spend from pool of 10
-        STATE["consecutive_burns"] += 1  # Increment burst toward 3
+        # Increment the burst count
+        STATE["space_burns_left"] -= 1
+        STATE["consecutive_burns"] += 1
         
-        # If burst limit reached, lock until next latch
-        if STATE["consecutive_burns"] >= 3:
-            STATE["can_space_burn"] = False 
+        # implement fuel deduction after each emergency propulsion
+        # Subtract 10% of total fuel per emergency thrust
+        STATE["fuel"] = max(0, STATE.get("fuel", 100.0) - 10.0)
 
+
+
+        # If 3 burns are hit, lock the engines
+        if STATE["consecutive_burns"] >= 3:
+            STATE["can_space_burn"] = False
+            
     STATE["last_plan_time"] = t
     return jsonify(state_payload())
+
 
 
 

@@ -18,6 +18,7 @@ STATE: Dict[str, Any] = {
 
     "crew_survival": 100.0,
     "food": 100.0,
+    "water": 100.0,
     "oxygen": 100.0,
     "fuel": 100.0,
 

@@ -70,7 +70,6 @@ export function updateHUD() {
   const vKmS = START_SPEED_KMS * (vUnits / Math.max(1e-6, sim.initialSpeed));
   const dKm = dAU * AU_KM;
   const tDays = simTimeToDays(tSimSec);
-
   const prog = clamp(1 - dUnits / Math.max(1e-6, sim.initialDistance), 0, 1);
 
   const ARRIVE_EPS = 0.03; // 3% remaining distance
@@ -90,6 +89,8 @@ export function updateHUD() {
   // Always update progress fill
   el.progressFill.style.width = `${(progShown * 100).toFixed(1)}%`;
 
+  const resources = ['crew_health', 'food', 'water', 'oxygen', 'fuel'];
+  resources.forEach(res => {
   const resources = ["crew_health", "food", "oxygen", "fuel"];
   resources.forEach((res) => {
     const val = sim.state[res] !== undefined ? sim.state[res] : 100;

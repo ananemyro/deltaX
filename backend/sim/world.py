@@ -77,6 +77,7 @@ def reset_world(seed: Optional[int] = None) -> None:
     STATE["fuel"] = 100.0
     STATE["oxygen"] = 100.0
     STATE["food"] = 100.0
+    STATE["water"] = 100.0
     STATE["crew_health"] = 100.0
 
 

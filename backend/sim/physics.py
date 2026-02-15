@@ -102,6 +102,12 @@ def update_reveals_and_collisions(dt: float) -> None:
         if not p.revealed and d <= CAPTURE_ZONE:
             p.revealed = True
             STATE["latched_planet_id"] = p.id
+
+            # after orbiting a planet, the consecutive burns should reset 
+            STATE["consecutive_burns"] = 0   # Resets the 3/3 counter to 0/3
+            STATE["can_space_burn"] = True    # Unlocks the "Red" lockout
+            # STATE["space_burns_left"] = 10    # (Optional) Replenish charges on landing
+
             
             # Snap position to avoid clipping
             push_x, push_y = (rocket.x - p.x) / d, (rocket.y - p.y) / d
@@ -276,6 +282,9 @@ def update_resources(dt: float) -> None:
     # (0.05 units per second means ~33 minutes of real-time play)
     STATE["oxygen"] -= 0.05 * dt
     STATE["food"] -= 0.03 * dt
+    STATE["water"] -= 0.04 * dt # New depletion rate
+
+    # 
     
     # 2. Fuel only drops when the rocket is NOT latched (moving through deep space)
     if STATE.get("latched_planet_id") is None:
@@ -286,5 +295,5 @@ def update_resources(dt: float) -> None:
         STATE["crew_survival"] -= 0.5 * dt # Health drops faster than resources
     
     # Clamp everything to 0 so they don't go negative
-    for key in ["oxygen", "food", "fuel", "crew_health"]:
+    for key in ["oxygen", "food", "water", "fuel", "crew_health"]:
         STATE[key] = max(0, STATE[key])

@@ -68,7 +68,7 @@
             <span id="statusText">ready</span>
           </div>
         </div>
-        <div style="display:flex; gap:10px; margin-top:12px;">
+        <div style="display:flex; gap:10px; margin-top:10px;">
           <button class="danger" id="resetBtn" style="flex:1;">↺ Reset</button>
         </div>
       </div>
@@ -103,6 +103,15 @@
 
           <div style="display:flex; align-items:center; gap:10px;">
             <span class="label" style="width:75px; flex-shrink:0;">Food</span>
+            <div class="progressBar" style="flex-grow:1; height:6px;">
+              <div class="progressFill food" id="foodFill" style="width:100%;"></div>
+            </div>
+            <span class="value" id="foodText" style="width:35px; text-align:right; font-size:0.85em;">100%</span>
+          </div>
+
+
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="label" style="width:75px; flex-shrink:0;">Water</span>
             <div class="progressBar" style="flex-grow:1; height:6px;">
               <div class="progressFill food" id="foodFill" style="width:100%;"></div>
             </div>
