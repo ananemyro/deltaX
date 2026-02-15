@@ -30,8 +30,36 @@ async function tick() {
 
     if (sim.started && !sim.freeze && !sim.missed && (s === "ready" || s === "running")) {
       await apiStep(STEP_DT);
+
+      const status = sim.state?.hud?.status;
+
+      // Show "And then..." overlay on depletion deaths
+      if (status === "failed") {
+        const r = sim.state?.fail_reason;
+
+        const depletionReasons = new Set([
+          "oxygen_depleted",
+          "morale_depleted",
+          "water_depleted",
+          "food_depleted",
+        ]);
+
+        if (depletionReasons.has(r)) {
+          sim.missed = true;    // reuse existing "And then..." overlay logic
+          sim.freeze = true;    // stop stepping
+          sim.started = false;  // stop further stepping
+        } else {
+          // Non-depletion failures still freeze + show miss overlay
+          sim.freeze = true;
+          sim.started = false;
+          const ov = document.getElementById("missOverlay");
+          if (ov) ov.style.display = "grid";
+        }
+      }
+
       updatePlanetUI();
     }
+
 
 
     updateRenderCamera();

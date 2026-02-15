@@ -64,33 +64,42 @@ export function initInput() {
 
   resetBtn.addEventListener("click", async () => {
       await apiReset();
+
+      // Core flags
       sim.freeze = false;
+      sim.missed = false;
+      sim.startX = null;
+      sim.initialDistance = null;
+      sim.initialSpeed = null;
+
+      // Ensure the sim isn't "stuck paused" from an event prompt
+      sim.started = true;
+
+      // Reset HUD-related “one-time” flags
       resetHudFlags();
 
-      // HIDE success overlay (and miss overlay if you have it)
+      // Hide overlays
       const successOv = document.getElementById("successOverlay");
       if (successOv) successOv.style.display = "none";
 
       const missOv = document.getElementById("missOverlay");
       if (missOv) missOv.style.display = "none";
 
-      // Clear miss state + recalc “start” baselines
-      sim.missed = false;
-      sim.startX = null;
-      sim.initialDistance = null;
-      sim.initialSpeed = null;
+      const orbitalPrompt = document.getElementById("orbitalPrompt");
+      if (orbitalPrompt) orbitalPrompt.style.display = "none";
 
-      if (window.visitedPlanets) {
-          window.visitedPlanets.clear();
-        }
+      const planetMenu = document.getElementById("planetMenuOverlay");
+      if (planetMenu) planetMenu.style.display = "none";
 
-      // Keep the game usable immediately after reset
-      sim.started = true;
+      // Clear visited planet memory (if you use it)
+      if (window.visitedPlanets) window.visitedPlanets.clear();
 
+      // Reset joystick UI state
       sim.joyVec = { x: 0, y: 0 };
       setKnob(joystick, knob, 0, 0);
       joystickMag.textContent = "0.00 g";
     });
+
 
   joystick.addEventListener("pointerdown", (evt) => {
     sim.joyActive = true;

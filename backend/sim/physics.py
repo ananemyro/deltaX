@@ -14,6 +14,26 @@ import random
 def clamp01_100(v: float) -> float:
     return max(0.0, min(100.0, v))
 
+def arm_grace_counters_if_needed() -> None:
+    """When food/water first hit 0, arm the grace planets counters."""
+    if STATE.get("water", 100.0) <= 0 and STATE.get("water_grace_planets") is None:
+        STATE["water_grace_planets"] = 1
+
+    if STATE.get("food", 100.0) <= 0 and STATE.get("food_grace_planets") is None:
+        STATE["food_grace_planets"] = 2
+
+def check_instant_gameover() -> None:
+    """Immediate game over conditions."""
+    if STATE.get("oxygen", 100.0) <= 0:
+        STATE["status"] = "failed"
+        STATE["fail_reason"] = "oxygen_depleted"
+        return
+
+    if STATE.get("morale", 100.0) <= 0:
+        STATE["status"] = "failed"
+        STATE["fail_reason"] = "morale_depleted"
+        return
+
 def apply_morale_on_latch(kind: str) -> None:
     morale = float(STATE.get("morale", 100.0))
 
@@ -40,9 +60,20 @@ def apply_morale_on_latch(kind: str) -> None:
     STATE["morale"] = clamp01_100(morale)
 
 def update_morale_from_low_stats(dt: float) -> None:
-    # Gentle drain over time if important stats are low.
     morale = float(STATE.get("morale", 100.0))
 
+    # -------------------------
+    # DEBUG: super fast morale drop
+    # Turn on/off by changing this flag.
+    # -------------------------
+    DEBUG_FAST_MORALE = False
+    if DEBUG_FAST_MORALE:
+        # drains 200 morale per sim-second -> hits 0 in ~0.5s
+        morale -= 200.0 * dt
+        STATE["morale"] = clamp01_100(morale)
+        return
+
+    # Normal logic (your existing one)
     oxygen = float(STATE.get("oxygen", 100.0))
     food = float(STATE.get("food", 100.0))
     ship = float(STATE.get("ship_health", 100.0))
@@ -179,7 +210,33 @@ def update_reveals_and_collisions(dt: float) -> None:
         # B. LATCH CHECK
         if not p.revealed and d <= CAPTURE_ZONE:
             p.revealed = True
+            # --- Grace-based depletion game over (triggered on planet stops) ---
+            arm_grace_counters_if_needed()
+
+            # If water is 0 and grace is already used up -> game over BEFORE latching
+            if STATE.get("water", 100.0) <= 0:
+                gp = STATE.get("water_grace_planets")
+                if gp is not None and gp <= 0:
+                    STATE["status"] = "failed"
+                    STATE["fail_reason"] = "water_depleted"
+                    return
+
+            # If food is 0 and grace is already used up -> game over BEFORE latching
+            if STATE.get("food", 100.0) <= 0:
+                gp = STATE.get("food_grace_planets")
+                if gp is not None and gp <= 0:
+                    STATE["status"] = "failed"
+                    STATE["fail_reason"] = "food_depleted"
+                    return
+
             STATE["latched_planet_id"] = p.id
+            # If we are at/below 0, spending a planet stop consumes grace
+            if STATE.get("water", 100.0) <= 0 and STATE.get("water_grace_planets") is not None:
+                STATE["water_grace_planets"] -= 1
+
+            if STATE.get("food", 100.0) <= 0 and STATE.get("food_grace_planets") is not None:
+                STATE["food_grace_planets"] -= 1
+
             apply_morale_on_latch(p.kind)
 
             STATE["food"] = max(0.0, STATE.get("food", 100.0) - 10.0)
@@ -226,13 +283,21 @@ def check_success_and_bounds() -> None:
 def step_sim(dt: float) -> None:
     if STATE["status"] != "running":
         return
-    if STATE.get("pending_event") is not None:
+
+    # Always tick resources + gameover, even if a prompt is open
+    update_resources(dt)
+    arm_grace_counters_if_needed()
+    check_instant_gameover()
+    if STATE["status"] != "running":
         return
 
-    # This now handles both "capture" and "orbital movement"
+    # If an event prompt is up, pause physics, but keep the world “alive”
+    if STATE.get("pending_event") is not None:
+        update_camera()
+        return
+
     update_reveals_and_collisions(dt)
-    
-    # Only calculate general gravity if we aren't locked into an orbit
+
     if STATE.get("latched_planet_id") is None:
         ax, ay = accel_from_planets(STATE["rocket"], STATE["planets"])
         rocket = STATE["rocket"]
@@ -247,6 +312,7 @@ def step_sim(dt: float) -> None:
 
     update_morale_from_low_stats(dt)
     update_camera()
+
 
 # def update_camera() -> None:
 #     rocket: Rocket = STATE["rocket"]
@@ -358,11 +424,15 @@ def apply_propulsion(dvx, dvy):
 
 # 
 def update_resources(dt: float) -> None:
+    # DEBUG: super fast oxygen drain
+    DEBUG_FAST_OXYGEN = True
+    if DEBUG_FAST_OXYGEN:
+        STATE["oxygen"] -= 200.0 * dt  # hits 0 in ~0.5 sec
+    else:
+        STATE["oxygen"] -= 0.05 * dt
     # 1. Oxygen and Food drop slowly over time
     # (0.05 units per second means ~33 minutes of real-time play)
-    STATE["oxygen"] -= 0.05 * dt
     STATE["food"] -= 0.03 * dt
-    STATE["water"] -= 0.04 * dt # New depletion rate
 
     # 
     

@@ -101,7 +101,9 @@ export function updateHUD() {
 
 
   resources.forEach((res) => {
-    const val = sim.state[res] !== undefined ? sim.state[res] : 100;
+    let val = sim.state[res] !== undefined ? sim.state[res] : 100;
+    val = Math.max(0, Math.min(100, val));
+
     const fillEl = document.getElementById(`${res}Fill`);
     const textEl = document.getElementById(`${res}Text`);
     if (fillEl) fillEl.style.width = `${val}%`;
@@ -120,7 +122,8 @@ export function updateHUD() {
     el.timeText.textContent = formatJourneyTimeDays(tDays);
 
     resources.forEach((res) => {
-      const val = sim.state[res] !== undefined ? sim.state[res] : 100;
+      let val = sim.state[res] !== undefined ? sim.state[res] : 100;
+      val = Math.max(0, Math.min(100, val));
       const textEl = document.getElementById(`${res}Text`);
       const fillEl = document.getElementById(`${res}Fill`);
 

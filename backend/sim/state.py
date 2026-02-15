@@ -25,6 +25,11 @@ STATE: Dict[str, Any] = {
     "fuel": 100.0,
     "morale": 100.0,
     "good_streak": 0,          # consecutive good planets visited
+    # When water hits 0: you may latch onto 1 more planet, then game over.
+    "water_grace_planets": None,  # int or None
+
+    # When food hits 0: you may latch onto 2 more planets, then game over.
+    "food_grace_planets": None,  # int or None
 
     "space_burns_left": 3,      # 3-times allowed propulsion (out of orbit)
     "can_space_burn": True,
