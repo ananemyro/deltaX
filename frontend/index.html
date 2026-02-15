@@ -29,19 +29,18 @@
 
       <!-- updates the user on their ressources -->
       <div id="planetMenuOverlay" class="intro-overlay" style="display:none;">
-        <div class="intro-card">
-            <h1 id="planetMenuTitle">Planet Surface Terminal</h1>
-            <p class="sub" style="margin-bottom:15px;">Life support stabilized. Select mission protocol:</p>
-            <ul>
-                <li><strong>Refine Resources:</strong> Replenish Water and Food levels.</li>
-                <li><strong>Repair Hull:</strong> Restore Crew Health.</li>
-                <li><strong>Science Logs:</strong> Record data for mission success.</li>
-            </ul>
-            <div style="display:flex; gap:10px;">
-                <button class="intro-play" style="flex:2;">START OPERATIONS</button>
-                <button id="exitPlanetBtn" class="danger" style="flex:1;">EXIT</button>
-            </div>
-        </div>
+          <div class="intro-card">
+              <h1 id="eventTitle">Planetary Event</h1>
+              <p id="eventText" style="margin-bottom:20px; font-size: 16px; line-height: 1.4;"></p>
+              
+              <div id="eventChoices" style="display:flex; gap:10px;">
+                  <button id="eventYes" class="primary" style="flex:1;">YES / PROCEED</button>
+                  <button id="eventNo" class="danger" style="flex:1;">NO / ABORT</button>
+              </div>
+              
+              <p id="eventResult" style="display:none; margin-top:20px; color: var(--accent);"></p>
+              <button id="exitPlanetBtn" style="display:none; width:100%; margin-top:10px;">CLOSE TERMINAL</button>
+          </div>
       </div>
 
 
