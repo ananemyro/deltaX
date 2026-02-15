@@ -106,3 +106,28 @@ a{color:var(--accent);}
 .kv .v, .resource-block .value {
   min-width: 3.5em; /* Reserve exactly enough space for "100%" */
 }
+
+
+#spaceBurnOverlay {
+  position: absolute;
+  top: 140px;      /* Position below the top HUD pills */
+  left: 20px;
+  z-index: 9999 !important;
+  pointer-events: none;
+  
+  background: rgba(13, 15, 20, 0.85); /* Semi-transparent dark background */
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  padding: 10px 16px;
+  text-align: center;
+  min-width: 100px;
+  display: flex !important;
+  flex-direction: column;
+}
+
+#burnCountDisplay {
+  font-family: monospace;
+  font-size: 32px;
+  font-weight: bold;
+  color: var(--accent); /* Uses your #5fe3ff cyan */
+}
