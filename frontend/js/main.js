@@ -37,6 +37,10 @@ async function tick() {
         setStatus("bad", "backend error");
       }
     }
+    if (sim.started && !sim.freeze && !sim.missed && (s === "ready" || s === "running")) {
+      await apiStep(STEP_DT);
+    }
+
 
     updateRenderCamera();
     renderFrame(canvas, ctx);

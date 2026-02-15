@@ -43,6 +43,21 @@
         </div>
       </div>
 
+        <div id="successOverlay" class="end-overlay" style="display:none;">
+          <div class="end-card">
+            <h1>Earth, confirmed.</h1>
+            <p>
+              Mission Control to crew: welcome home.<br/>
+              The universe has spared you... this time.
+            </p>
+
+            <p style="opacity:0.75; font-size:14px; margin-top:16px;">
+              Press <b>Reset</b> to run the mission again.
+            </p>
+          </div>
+        </div>
+
+
       <div class="hudTop">
         <div class="pill" style="width: 300px;">
           <div style="display:flex; flex-direction:column; gap:8px;">
@@ -111,9 +126,9 @@
           <div style="display:flex; align-items:center; gap:10px;">
             <span class="label" style="width:75px; flex-shrink:0;">Water</span>
             <div class="progressBar" style="flex-grow:1; height:6px;">
-              <div class="progressFill food" id="foodFill" style="width:100%;"></div>
+              <div class="progressFill food" id="waterFill" style="width:100%;"></div>
             </div>
-            <span class="value" id="foodText" style="width:35px; text-align:right; font-size:0.85em;">100%</span>
+            <span class="value" id="waterText" style="width:35px; text-align:right; font-size:0.85em;">100%</span>
           </div>
 
           <div style="display:flex; align-items:center; gap:10px;">

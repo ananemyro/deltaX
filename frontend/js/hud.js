@@ -7,6 +7,11 @@ const JOURNEY_SEC_PER_SIM_SEC = 86_400;
 
 let hudFrameCount = 0;
 let lastBurnCount = 3;
+let successShown = false;
+
+export function resetHudFlags() {
+  successShown = false;
+}
 
 function formatJourneyTimeDays(days) {
   if (days < 60) return `${days.toFixed(1)} d`;
@@ -71,6 +76,19 @@ export function updateHUD() {
   const arrivedVisually = (dUnits / Math.max(1e-6, sim.initialDistance)) < ARRIVE_EPS;
 
   const done = (status === "success") || arrivedVisually;
+
+    if (done && !successShown) {
+      const ov = document.getElementById("successOverlay");
+      if (ov) ov.style.display = "grid";
+
+      // freeze stepping without messing with "missed"
+      sim.freeze = true;
+
+      successShown = true;
+    }
+
+
+
   const progShown = done ? 1 : prog;
   const pShown = done ? 1 : p;
 
@@ -79,7 +97,8 @@ export function updateHUD() {
 
   el.progressFill.style.width = `${(progShown * 100).toFixed(1)}%`;
 
-  const resources = ["crew_health", "food", "oxygen", "fuel"];
+  const resources = ["crew_health", "oxygen", "food", "water", "fuel"];
+
   resources.forEach((res) => {
     const val = sim.state[res] !== undefined ? sim.state[res] : 100;
     const fillEl = document.getElementById(`${res}Fill`);
@@ -147,3 +166,5 @@ export function updateHUD() {
     setStatus(sim.running ? "run" : "wait", sim.running ? "running" : "ready");
   }
 }
+
+

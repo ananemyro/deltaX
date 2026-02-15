@@ -1,6 +1,9 @@
 import { sim } from "./state.js";
 import { JOY_DV_MAX, JOY_GAIN } from "./config.js";
 import { apiPlan, apiReset } from "./api.js";
+import { resetHudFlags } from "./hud.js";
+
+resetHudFlags();
 
 const G0 = 9.81;
 const TARGET_MAX_G = 1.0;
@@ -54,21 +57,31 @@ export function initInput() {
   const joystickMag = document.getElementById("joystickMag");
 
   resetBtn.addEventListener("click", async () => {
-    await apiReset();
+      await apiReset();
+      sim.freeze = false;
+      resetHudFlags();
 
-    // Clear miss state + recalc “start” baselines
-    sim.missed = false;
-    sim.startX = null;
-    sim.initialDistance = null;
-    sim.initialSpeed = null;
+      // HIDE success overlay (and miss overlay if you have it)
+      const successOv = document.getElementById("successOverlay");
+      if (successOv) successOv.style.display = "none";
 
-    // Keep the game usable immediately after reset
-    sim.started = true;
+      const missOv = document.getElementById("missOverlay");
+      if (missOv) missOv.style.display = "none";
 
-    sim.joyVec = { x: 0, y: 0 };
-    setKnob(joystick, knob, 0, 0);
-    joystickMag.textContent = "0.00 g";
-  });
+      // Clear miss state + recalc “start” baselines
+      sim.missed = false;
+      sim.startX = null;
+      sim.initialDistance = null;
+      sim.initialSpeed = null;
+
+      // Keep the game usable immediately after reset
+      sim.started = true;
+
+      sim.joyVec = { x: 0, y: 0 };
+      setKnob(joystick, knob, 0, 0);
+      joystickMag.textContent = "0.00 g";
+    });
+
 
   joystick.addEventListener("pointerdown", (evt) => {
     sim.joyActive = true;

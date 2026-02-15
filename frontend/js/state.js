@@ -8,6 +8,7 @@ export const sim = {
 
   missed: false,
   startX: null,
+  freeze: false,
 
   // joystick state
   joyActive: false,
