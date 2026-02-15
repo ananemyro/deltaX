@@ -276,7 +276,6 @@ function initPlanetMenu() {
         sim.started = false; // Pause physics
     };
 
-
     // --- NEW LOGIC: FIX FOR THE HICCUP ---
     ignoreBtn.onclick = () => {
         if (sim.state.latched_planet_id) {
@@ -285,7 +284,7 @@ function initPlanetMenu() {
         }
         orbitalPrompt.style.display = "none";
     };
-    
+
 
     exitBtn.onclick = () => {
         planetMenu.style.display = "none";

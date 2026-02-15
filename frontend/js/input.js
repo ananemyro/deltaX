@@ -71,7 +71,6 @@ export function initInput() {
   //   joystickMag.textContent = "0.00 g";
   // });
 
-
   // version1 
   resetBtn.addEventListener("click", async () => {
     await apiReset();
