@@ -97,7 +97,8 @@ export function updateHUD() {
 
   el.progressFill.style.width = `${(progShown * 100).toFixed(1)}%`;
 
-  const resources = ["crew_health", "ship_health", "oxygen", "food", "water", "fuel"];
+  const resources = ["crew_health", "ship_health", "morale", "oxygen", "food", "water", "fuel"];
+
 
   resources.forEach((res) => {
     const val = sim.state[res] !== undefined ? sim.state[res] : 100;

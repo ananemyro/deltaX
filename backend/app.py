@@ -36,7 +36,6 @@ def api_event_resolve():
     if not ev:
         return jsonify(state_payload())
 
-    # Basic validation
     ev_type = ev.get("type")
 
     valid = {
@@ -48,32 +47,44 @@ def api_event_resolve():
         return jsonify(state_payload())
 
     # --- Apply consequences for this event type ---
-    if ev.get("type") == "planet_latch_repair":
+    if ev_type == "planet_latch_repair":
         if choice == "repair":
             # Food goes down 10% (current value)
             STATE["food"] = max(0.0, STATE.get("food", 100.0) * 0.90)
-            # Ship health stays same
-        else:
-            # Ship health decreases by random amount (e.g. 5% to 20%)
+
+            # Morale boost for taking care of ship
+            STATE["morale"] = min(100.0, STATE.get("morale", 100.0) + 6.0)
+
+        elif choice == "skip":
+            # Ship health decreases randomly
             dmg = random.uniform(5.0, 20.0)
             STATE["ship_health"] = max(0.0, STATE.get("ship_health", 100.0) - dmg)
 
-        # If ship health < 50, oxygen decreases by 25% at every planet (on each latch decision)
+            # Morale penalty for ignoring repairs
+            STATE["morale"] = max(0.0, STATE.get("morale", 100.0) - 8.0)
+
+        # If ship health < 50, oxygen decreases by 25% at every planet decision
         if STATE.get("ship_health", 100.0) < 50.0:
             STATE["oxygen"] = max(0.0, STATE.get("oxygen", 100.0) * 0.75)
-    elif ev.get("type") == "planet_water_recycler":
+
+    elif ev_type == "planet_water_recycler":
         if choice == "fix":
-            # “Stopping costs something”: simplest is food down 10%
+            # Food cost
             STATE["food"] = max(0.0, STATE.get("food", 100.0) * 0.90)
-            # Water stays same
+
+            # Morale boost for fixing systems
+            STATE["morale"] = min(100.0, STATE.get("morale", 100.0) + 6.0)
+
         elif choice == "ignore":
-            # Water drops immediately by a chunk
+            # Water drops immediately
             STATE["water"] = max(0.0, STATE.get("water", 100.0) - 20.0)
+
+            # Morale penalty for taking the risk
+            STATE["morale"] = max(0.0, STATE.get("morale", 100.0) - 4.0)
 
     # Clear event so sim resumes
     STATE["pending_event"] = None
     return jsonify(state_payload())
-
 
 @app.post("/api/plan")
 def api_plan():

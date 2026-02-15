@@ -11,6 +11,53 @@ from sim.config import (
 from sim.mathutil import dist
 import random
 
+def clamp01_100(v: float) -> float:
+    return max(0.0, min(100.0, v))
+
+def apply_morale_on_latch(kind: str) -> None:
+    morale = float(STATE.get("morale", 100.0))
+
+    if kind == "good":
+        # streak grows only on good planets
+        STATE["good_streak"] = int(STATE.get("good_streak", 0)) + 1
+        streak = STATE["good_streak"]
+
+        # streak bonus grows but caps
+        bonus = min(2.0 + streak, 10.0)
+        morale += bonus
+    else:
+        # reset streak on non-good planets
+        STATE["good_streak"] = 0
+
+        if kind == "okay":
+            morale -= 10.0
+        elif kind == "bad":
+            morale -= 25.0
+        else:
+            # unknown kinds: no change
+            pass
+
+    STATE["morale"] = clamp01_100(morale)
+
+def update_morale_from_low_stats(dt: float) -> None:
+    # Gentle drain over time if important stats are low.
+    morale = float(STATE.get("morale", 100.0))
+
+    oxygen = float(STATE.get("oxygen", 100.0))
+    food = float(STATE.get("food", 100.0))
+    ship = float(STATE.get("ship_health", 100.0))
+    crew = float(STATE.get("crew_health", 100.0))
+
+    pen = 0.0
+    if oxygen < 50.0: pen += 1.6
+    if food < 50.0:   pen += 0.8
+    if ship < 50.0:   pen += 1.2
+    if crew < 50.0:   pen += 1.2
+
+    morale -= pen * dt
+    STATE["morale"] = clamp01_100(morale)
+
+
 def maybe_create_latch_event(planet_id: str) -> None:
     # Don’t overwrite an existing event
     if STATE.get("pending_event") is not None:
@@ -133,6 +180,7 @@ def update_reveals_and_collisions(dt: float) -> None:
         if not p.revealed and d <= CAPTURE_ZONE:
             p.revealed = True
             STATE["latched_planet_id"] = p.id
+            apply_morale_on_latch(p.kind)
 
             STATE["food"] = max(0.0, STATE.get("food", 100.0) - 10.0)
 
@@ -197,12 +245,8 @@ def step_sim(dt: float) -> None:
     if STATE["status"] == "running":
         check_success_and_bounds()
 
+    update_morale_from_low_stats(dt)
     update_camera()
-
-
-
-
-
 
 # def update_camera() -> None:
 #     rocket: Rocket = STATE["rocket"]

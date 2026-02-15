@@ -23,6 +23,8 @@ STATE: Dict[str, Any] = {
     "water": 100.0,
     "oxygen": 100.0,
     "fuel": 100.0,
+    "morale": 100.0,
+    "good_streak": 0,          # consecutive good planets visited
 
     "space_burns_left": 3,      # 3-times allowed propulsion (out of orbit)
     "can_space_burn": True,
