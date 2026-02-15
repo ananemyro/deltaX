@@ -30,9 +30,6 @@ export function initHUD() {
   el.probText2 = document.getElementById("probText2");
   el.timeText = document.getElementById("timeText");
 
-  el.statusDot = document.getElementById("statusDot");
-  el.statusText = document.getElementById("statusText");
-
   el.burnOverlay = document.getElementById("spaceBurnOverlay");
   el.burnCount = document.getElementById("burnCountDisplay");
   el.burnStatus = document.getElementById("burnStatus");
@@ -43,6 +40,7 @@ function clamp(v, lo, hi) {
 }
 
 export function setStatus(kind, text) {
+  if (!el.statusText || !el.statusDot) return;
   el.statusText.textContent = text;
   el.statusDot.className = "dot " + kind;
 }

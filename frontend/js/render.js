@@ -281,6 +281,17 @@ function drawShip(canvas, ctx) {
   ctx.fillStyle = bodyGrad;
   ctx.fill();
 
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(20 * scale, 0);
+  ctx.bezierCurveTo(18 * scale, -5 * scale, 12 * scale, -6 * scale, 10 * scale, -7 * scale);
+  ctx.lineTo(10 * scale, 7 * scale);
+  ctx.bezierCurveTo(12 * scale, 6 * scale, 18 * scale, 5 * scale, 20 * scale, 0);
+  ctx.clip();
+  ctx.fillStyle = "#e74c3c";
+  ctx.fill();
+  ctx.restore();
+
   ctx.beginPath();
   ctx.arc(2, 0, 3.5, 0, Math.PI * 2);
   ctx.fillStyle = "#3498db";
