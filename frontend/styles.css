@@ -248,3 +248,35 @@ a{color:var(--accent);}
 .intro-overlay {
   z-index: 2147483647 !important;
 }
+
+.miss-overlay{
+  position:absolute;
+  inset:0;
+  z-index: 2147483647; /* above all HUD */
+  display:grid;
+  place-items:center;
+  background: rgba(0,0,0,0.78);
+  backdrop-filter: blur(3px);
+  pointer-events: auto; /* blocks clicks */
+}
+
+.miss-card{
+  text-align:center;
+  color: rgba(255,255,255,0.95);
+  text-shadow: 0 10px 40px rgba(0,0,0,0.6);
+  padding: 18px 22px;
+}
+
+.miss-line1{
+  font-size: 34px;
+  font-weight: 750;
+  letter-spacing: 0.3px;
+}
+
+.miss-line2{
+  margin-top: 6px;
+  font-size: 44px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+}
+

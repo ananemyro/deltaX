@@ -11,9 +11,10 @@ const { canvas, ctx } = initCanvas();
 initHUD();
 initInput();
 
-// Intro overlay hookup
 const overlay = document.getElementById("introOverlay");
 const playBtn = document.getElementById("playBtn");
+
+const missOverlay = document.getElementById("missOverlay");
 
 if (playBtn && overlay) {
   playBtn.addEventListener("click", () => {
@@ -21,21 +22,14 @@ if (playBtn && overlay) {
     sim.started = true;
     setStatus("wait", "launching...");
   });
-} else {
-  // If these are missing, you won't crash—game still runs.
-  console.warn("Intro overlay elements missing:", { overlayFound: !!overlay, playBtnFound: !!playBtn });
 }
 
-let lastTime = performance.now();
-
-async function tick(now) {
-  lastTime = now;
-
+async function tick() {
   if (sim.state) {
     const s = sim.state.hud.status;
 
-    // ✅ Step only when "ready" or "running" AND after Play
-    if (sim.started && (s === "ready" || s === "running")) {
+    // ONLY ONE stepping block (and stop stepping if missed)
+    if (sim.started && !sim.missed && (s === "ready" || s === "running")) {
       try {
         await apiStep(STEP_DT);
       } catch (e) {
@@ -46,6 +40,10 @@ async function tick(now) {
 
     updateRenderCamera();
     renderFrame(canvas, ctx);
+    if (missOverlay) {
+        missOverlay.style.display = sim.missed ? "grid" : "none";
+    }
+
   }
 
   requestAnimationFrame(tick);
@@ -57,8 +55,11 @@ async function tick(now) {
     await apiGetState();
     await apiReset();
 
-    // Start in "not started" mode so overlay shows and sim doesn't step
+    // Start in "not started" mode so overlay shows
     sim.started = false;
+    sim.missed = false;
+    sim.startX = null;
+
     if (overlay) overlay.style.display = "grid";
 
     setStatus("wait", "ready");

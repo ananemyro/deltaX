@@ -2,7 +2,12 @@ export const sim = {
   state: null,
   running: false,
   started: false,
+
   initialDistance: null,
+  initialSpeed: null,
+
+  missed: false,
+  startX: null,
 
   // joystick state
   joyActive: false,

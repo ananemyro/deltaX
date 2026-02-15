@@ -3,7 +3,6 @@ import { sim } from "./state.js";
 const el = {};
 
 const AU_KM = 149_597_870.7;
-const KM_PER_UNIT = 1_000_000;
 const JOURNEY_SEC_PER_SIM_SEC = 86_400;
 
 let hudFrameCount = 0;
@@ -34,7 +33,6 @@ export function initHUD() {
   el.statusDot = document.getElementById("statusDot");
   el.statusText = document.getElementById("statusText");
 
-  // New Emergency Burn Elements
   el.burnOverlay = document.getElementById("spaceBurnOverlay");
   el.burnCount = document.getElementById("burnCountDisplay");
   el.burnStatus = document.getElementById("burnStatus");
@@ -52,7 +50,6 @@ export function setStatus(kind, text) {
 export function updateHUD() {
   if (!sim.state) return;
 
-  // 1. DATA EXTRACTION
   const dUnits = sim.state.hud.distance_to_destination;
   const vUnits = sim.state.hud.speed;
   const p = sim.state.hud.success_probability;
@@ -62,7 +59,6 @@ export function updateHUD() {
   if (sim.initialDistance == null) sim.initialDistance = dUnits;
   if (sim.initialSpeed == null) sim.initialSpeed = vUnits;
 
-  // 2. UNIT CONVERSIONS & PROGRESS
   const START_DISTANCE_AU = 10.0;
   const START_SPEED_KMS = 30.0;
 
@@ -70,27 +66,21 @@ export function updateHUD() {
   const vKmS = START_SPEED_KMS * (vUnits / Math.max(1e-6, sim.initialSpeed));
   const dKm = dAU * AU_KM;
   const tDays = simTimeToDays(tSimSec);
+
   const prog = clamp(1 - dUnits / Math.max(1e-6, sim.initialDistance), 0, 1);
 
-  const ARRIVE_EPS = 0.03; // 3% remaining distance
+  const ARRIVE_EPS = 0.03;
   const arrivedVisually = (dUnits / Math.max(1e-6, sim.initialDistance)) < ARRIVE_EPS;
 
-  // Force “done” visuals when backend says success
   const done = (status === "success") || arrivedVisually;
-
   const progShown = done ? 1 : prog;
   const pShown = done ? 1 : p;
 
-
-  // 3. VISUAL THROTTLING
   hudFrameCount++;
   const shouldUpdateText = hudFrameCount % 4 === 0;
 
-  // Always update progress fill
   el.progressFill.style.width = `${(progShown * 100).toFixed(1)}%`;
 
-  const resources = ['crew_health', 'food', 'water', 'oxygen', 'fuel'];
-  resources.forEach(res => {
   const resources = ["crew_health", "food", "oxygen", "fuel"];
   resources.forEach((res) => {
     const val = sim.state[res] !== undefined ? sim.state[res] : 100;
@@ -99,7 +89,6 @@ export function updateHUD() {
   });
 
   if (shouldUpdateText) {
-    // Top & Journey Text
     el.progressText.textContent = `${Math.round(progShown * 100)}%`;
     el.speedText.textContent = vKmS.toFixed(1);
     el.speedText2.textContent = vKmS.toFixed(1);
@@ -110,7 +99,6 @@ export function updateHUD() {
     el.distText.textContent = Math.round(dKm).toLocaleString();
     el.timeText.textContent = formatJourneyTimeDays(tDays);
 
-    // Survival Resource Text
     resources.forEach((res) => {
       const val = sim.state[res] !== undefined ? sim.state[res] : 100;
       const textEl = document.getElementById(`${res}Text`);
@@ -123,7 +111,6 @@ export function updateHUD() {
       }
     });
 
-    // Emergency Burn Overlay Logic
     const currentBurns = sim.state.space_burns_left ?? 3;
     const canSpaceBurn = sim.state.can_space_burn ?? true;
     const isLatched = sim.state.latched_planet_id !== null;
@@ -142,7 +129,7 @@ export function updateHUD() {
         el.burnStatus.textContent = "ORBITAL: UNLIMITED";
         el.burnStatus.style.color = "var(--good)";
       } else if (!canSpaceBurn) {
-        el.burnStatus.textContent = "COOLDOWN: LATCH TO RESET";
+        el.burnStatus.textContent = "LIMIT HIT: LATCH TO RESET";
         el.burnStatus.style.color = "var(--bad)";
       } else {
         el.burnStatus.textContent = "READY";
@@ -151,13 +138,14 @@ export function updateHUD() {
     }
   }
 
-  // 5. UPDATE MISSION STATUS
-    if (done) {
-      setStatus("good", "success");
-    } else if (status === "failed") {
-      setStatus("bad", "failed");
-    } else {
-      setStatus(sim.running ? "run" : "wait", sim.running ? "running" : "ready");
-    }
-
+  // Mission status label
+  if (done) {
+    setStatus("good", "success");
+  } else if (status === "failed") {
+    setStatus("bad", "failed");
+  } else if (sim.missed) {
+    setStatus("bad", "missed");
+  } else {
+    setStatus(sim.running ? "run" : "wait", sim.running ? "running" : "ready");
+  }
 }

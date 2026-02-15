@@ -2,30 +2,23 @@ import { sim } from "./state.js";
 import { JOY_DV_MAX, JOY_GAIN } from "./config.js";
 import { apiPlan, apiReset } from "./api.js";
 
-// --- Display-only conversion: joystick -> "g" (tunable) ---
-const G0 = 9.81;               // m/s^2
-const TARGET_MAX_G = 1.0;      // full joystick shows ~this many g
-const DV_UNITS_ARE_KMS = true; // if your displayed dv is "km/s". Otherwise set false.
+const G0 = 9.81;
+const TARGET_MAX_G = 1.0;
+const DV_UNITS_ARE_KMS = true;
 
 function plannedDvMag(mag) {
-  // Unclamped magnitude would be JOY_GAIN * mag, then clamp to JOY_DV_MAX
   return Math.min(JOY_DV_MAX, JOY_GAIN * mag);
 }
 
 function dvToG(dv) {
-  // Convert dv to m/s if we’re interpreting dv as km/s
   const dv_mps = DV_UNITS_ARE_KMS ? dv * 1000 : dv;
 
-  // Pick burn time so that dvMax maps to TARGET_MAX_G
   const dvMax = plannedDvMag(1.0);
   const dvMax_mps = DV_UNITS_ARE_KMS ? dvMax * 1000 : dvMax;
-
-  // Avoid divide-by-zero if dvMax is 0
   if (dvMax_mps <= 1e-9) return 0.0;
 
   const burnSec = dvMax_mps / (TARGET_MAX_G * G0);
   const a_mps2 = dv_mps / burnSec;
-
   return a_mps2 / G0;
 }
 
@@ -62,7 +55,16 @@ export function initInput() {
 
   resetBtn.addEventListener("click", async () => {
     await apiReset();
-    sim.started = false;
+
+    // Clear miss state + recalc “start” baselines
+    sim.missed = false;
+    sim.startX = null;
+    sim.initialDistance = null;
+    sim.initialSpeed = null;
+
+    // Keep the game usable immediately after reset
+    sim.started = true;
+
     sim.joyVec = { x: 0, y: 0 };
     setKnob(joystick, knob, 0, 0);
     joystickMag.textContent = "0.00 g";
@@ -77,8 +79,7 @@ export function initInput() {
     setKnob(joystick, knob, sim.joyVec.x, sim.joyVec.y);
 
     const dv = plannedDvMag(j.mag);
-    const g = dvToG(dv);
-    joystickMag.textContent = `${g.toFixed(2)} g`;
+    joystickMag.textContent = `${dvToG(dv).toFixed(2)} g`;
   });
 
   joystick.addEventListener("pointermove", (evt) => {
@@ -89,18 +90,14 @@ export function initInput() {
     setKnob(joystick, knob, sim.joyVec.x, sim.joyVec.y);
 
     const dv = plannedDvMag(j.mag);
-    const g = dvToG(dv);
-    joystickMag.textContent = `${g.toFixed(2)} g`;
+    joystickMag.textContent = `${dvToG(dv).toFixed(2)} g`;
   });
 
   joystick.addEventListener("pointerup", async () => {
     sim.joyActive = false;
     sim.started = true;
 
-    const mag = Math.min(
-      1.0,
-      Math.sqrt(sim.joyVec.x * sim.joyVec.x + sim.joyVec.y * sim.joyVec.y)
-    );
+    const mag = Math.min(1.0, Math.sqrt(sim.joyVec.x ** 2 + sim.joyVec.y ** 2));
 
     let dvx = -sim.joyVec.x * JOY_GAIN * mag;
     let dvy =  sim.joyVec.y * JOY_GAIN * mag;
