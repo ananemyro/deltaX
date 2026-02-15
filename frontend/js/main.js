@@ -3,9 +3,9 @@ import { STEP_DT } from "./config.js";
 import { sim } from "./state.js";
 import { initCanvas, updateRenderCamera } from "./canvas.js";
 import { initHUD, setStatus } from "./hud.js";
-import { apiGetState, apiReset, apiStep } from "./api.js";
 import { renderFrame } from "./render.js";
 import { initInput } from "./input.js";
+import { apiGetState, apiReset, apiStep, apiResolveEvent } from "./api.js";
 
 const { canvas, ctx } = initCanvas();
 initHUD();
@@ -28,18 +28,9 @@ async function tick() {
   if (sim.state) {
     const s = sim.state.hud.status;
 
-    // ONLY ONE stepping block (and stop stepping if missed)
-    if (sim.started && !sim.missed && (s === "ready" || s === "running")) {
-      try {
-        await apiStep(STEP_DT);
-        updatePlanetUI();
-      } catch (e) {
-        console.error(e);
-        setStatus("bad", "backend error");
-      }
-    }
     if (sim.started && !sim.freeze && !sim.missed && (s === "ready" || s === "running")) {
       await apiStep(STEP_DT);
+      updatePlanetUI();
     }
 
 
@@ -185,31 +176,26 @@ window.visitedPlanets = new Set(); // Using window makes it global
 
 
 // version 4: last working version before trying to pull event from events.py
-function updatePlanetUI() {
-    if (!sim.state) return;
-    const orbitalPrompt = document.getElementById("orbitalPrompt");
-    const planetMenu = document.getElementById("planetMenuOverlay");
-    const latchedId = sim.state.latched_planet_id;
+async function updatePlanetUI() {
+  if (!sim.state) return;
 
-    if (latchedId === null) {
-        orbitalPrompt.style.display = "none";
-        return;
-    }
+  const orbitalPrompt = document.getElementById("orbitalPrompt");
+  const eventText = document.getElementById("orbitalEventText"); // if you have it
+  const ev = sim.state.pending_event;
 
-    const p = sim.state.planets.find(planet => planet.id === latchedId);
-    
-    // Check if it's a blue planet AND we haven't visited/ignored it yet
-    const isBluePlanet = p && p.status === "good";
-    const alreadyHandled = window.visitedPlanets.has(latchedId);
+  if (!ev) {
+    orbitalPrompt.style.display = "none";
+    return;
+  }
 
-    if (isBluePlanet && !alreadyHandled) {
-        if (planetMenu.style.display !== "grid") {
-            orbitalPrompt.style.display = "flex";
-        }
-    } else {
-        orbitalPrompt.style.display = "none";
-    }
+  // Show prompt
+  if (eventText) eventText.textContent = ev.prompt || "Decision required.";
+  orbitalPrompt.style.display = "flex";
+
+  // Pause stepping while choice is up
+  sim.started = false;
 }
+
 
 
 // version 5: pulling from events.py
@@ -301,47 +287,23 @@ document.getElementById("ignoreBtn").onclick = () => {
 //     };
 // }
 
-
-
-
-
 function initPlanetMenu() {
-    const orbitalPrompt = document.getElementById("orbitalPrompt");
-    const planetMenu = document.getElementById("planetMenuOverlay");
-    const landBtn = document.getElementById("landBtn");
-    const exitBtn = document.getElementById("exitPlanetBtn");
+  const orbitalPrompt = document.getElementById("orbitalPrompt");
+  const landBtn = document.getElementById("landBtn");
+  const ignoreBtn = document.getElementById("ignoreBtn");
 
-    landBtn.onclick = () => {
-        // Mark the current planet as visited
-        if (sim.state.latched_planet_id) {
-            visitedPlanets.add(sim.state.latched_planet_id);
-        }
-        
-        orbitalPrompt.style.display = "none";
-        planetMenu.style.display = "grid";
-        sim.started = false; // Pause physics
-    };
+  landBtn.onclick = async () => {
+    await apiResolveEvent("repair");
+    orbitalPrompt.style.display = "none";
+    sim.started = true; // resume
+  };
 
-    // --- NEW LOGIC: FIX FOR THE HICCUP ---
-    ignoreBtn.onclick = () => {
-        if (sim.state.latched_planet_id) {
-            // Treat 'ignoring' as 'visited' so the loop won't show it again
-            window.visitedPlanets.add(sim.state.latched_planet_id); 
-        }
-        orbitalPrompt.style.display = "none";
-    };
-
-
-    exitBtn.onclick = () => {
-        planetMenu.style.display = "none";
-        // Prompt will stay hidden because we added the ID to visitedPlanets
-        sim.started = true; // Resume physics
-    };
+  ignoreBtn.onclick = async () => {
+    await apiResolveEvent("skip");
+    orbitalPrompt.style.display = "none";
+    sim.started = true; // resume
+  };
 }
-
-
-
-
 
 // Call this once during bootup
 initPlanetMenu();

@@ -79,6 +79,7 @@ def reset_world(seed: Optional[int] = None) -> None:
     STATE["food"] = 100.0
     STATE["water"] = 100.0
     STATE["crew_health"] = 100.0
+    STATE["ship_health"] = 100.0
 
 
     rocket = Rocket(

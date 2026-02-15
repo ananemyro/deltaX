@@ -109,8 +109,20 @@ def update_reveals_and_collisions(dt: float) -> None:
             STATE["consecutive_burns"] = 0   # Resets the 3/3 counter to 0/3
             STATE["can_space_burn"] = True    # Unlocks the "Red" lockout
             # STATE["space_burns_left"] = 10    # (Optional) Replenish charges on landing
+            if STATE.get("pending_event") is None:
+                # (optional) only ask on good planets to match your current UI
+                if p.kind == "good":
+                    STATE["pending_event"] = {
+                        "type": "planet_latch_repair",
+                        "planet_id": p.id,
+                        "prompt": "Vessel latched. Stop to repair ship?",
+                        "choices": [
+                            {"id": "repair", "label": "YES, PROCEED"},
+                            {"id": "skip", "label": "NO, STAY IN ORBIT"},
+                        ],
+                    }
 
-            
+
             # Snap position to avoid clipping
             push_x, push_y = (rocket.x - p.x) / d, (rocket.y - p.y) / d
             rocket.x = p.x + push_x * CAPTURE_ZONE
@@ -142,6 +154,8 @@ def check_success_and_bounds() -> None:
 
 def step_sim(dt: float) -> None:
     if STATE["status"] != "running":
+        return
+    if STATE.get("pending_event") is not None:
         return
 
     # This now handles both "capture" and "orbital movement"

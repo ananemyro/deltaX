@@ -53,3 +53,15 @@ export async function apiPlan(dvx, dvy) {
   updateHUD();
   return data;
 }
+
+export async function apiResolveEvent(choice) {
+  const res = await fetch(`${API}/event/resolve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ choice }),
+  });
+  const data = await res.json();
+  setState(data);
+  updateHUD();
+  return data;
+}

@@ -140,4 +140,7 @@ def state_payload() -> Dict[str, Any]:
         "water": STATE.get("water", 100.0),
         "crew_health": STATE.get("crew_health", 100.0),
 
+        "pending_event": STATE.get("pending_event"),
+        "ship_health": STATE.get("ship_health", 100.0),
+
     }

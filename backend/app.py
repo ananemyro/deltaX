@@ -22,6 +22,44 @@ def api_reset():
     reset_world(seed=seed)
     return jsonify(state_payload())
 
+import random
+
+@app.post("/api/event/resolve")
+def api_event_resolve():
+    if STATE["status"] != "running":
+        return jsonify(state_payload())
+
+    data = request.get_json(silent=True) or {}
+    choice = data.get("choice")
+
+    ev = STATE.get("pending_event")
+    if not ev:
+        return jsonify(state_payload())
+
+    # Basic validation
+    if choice not in ("repair", "skip"):
+        return jsonify(state_payload())
+
+    # --- Apply consequences for this event type ---
+    if ev.get("type") == "planet_latch_repair":
+        if choice == "repair":
+            # Food goes down 10% (current value)
+            STATE["food"] = max(0.0, STATE.get("food", 100.0) * 0.90)
+            # Ship health stays same
+        else:
+            # Ship health decreases by random amount (e.g. 5% to 20%)
+            dmg = random.uniform(5.0, 20.0)
+            STATE["ship_health"] = max(0.0, STATE.get("ship_health", 100.0) - dmg)
+
+        # If ship health < 50, oxygen decreases by 25% at every planet (on each latch decision)
+        if STATE.get("ship_health", 100.0) < 50.0:
+            STATE["oxygen"] = max(0.0, STATE.get("oxygen", 100.0) * 0.75)
+
+    # Clear event so sim resumes
+    STATE["pending_event"] = None
+    return jsonify(state_payload())
+
+
 @app.post("/api/plan")
 def api_plan():
     if STATE["status"] != "running":
