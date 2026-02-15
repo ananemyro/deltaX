@@ -38,26 +38,25 @@ def apply_morale_on_latch(kind: str) -> None:
     morale = float(STATE.get("morale", 100.0))
 
     if kind == "good":
-        # streak grows only on good planets
         STATE["good_streak"] = int(STATE.get("good_streak", 0)) + 1
         streak = STATE["good_streak"]
 
-        # streak bonus grows but caps
-        bonus = min(2.0 + streak, 10.0)
-        morale += bonus
+        # small gain, capped
+        morale += min(3.0 + 1.5 * streak, 12.0)
+
     else:
-        # reset streak on non-good planets
         STATE["good_streak"] = 0
 
+        # BIG drops so morale can hit 0 in a single run
         if kind == "okay":
-            morale -= 10.0
+            morale -= random.uniform(18.0, 32.0)
         elif kind == "bad":
-            morale -= 25.0
+            morale -= random.uniform(45.0, 70.0)
         else:
-            # unknown kinds: no change
-            pass
+            morale -= 10.0
 
     STATE["morale"] = clamp01_100(morale)
+
 
 def update_morale_from_low_stats(dt: float) -> None:
     morale = float(STATE.get("morale", 100.0))
@@ -77,13 +76,30 @@ def update_morale_from_low_stats(dt: float) -> None:
     oxygen = float(STATE.get("oxygen", 100.0))
     food = float(STATE.get("food", 100.0))
     ship = float(STATE.get("ship_health", 100.0))
-    crew = float(STATE.get("crew_health", 100.0))
+    water = float(STATE.get("water", 100.0))
+    fuel = float(STATE.get("fuel", 100.0))
 
     pen = 0.0
-    if oxygen < 50.0: pen += 1.6
-    if food < 50.0:   pen += 0.8
-    if ship < 50.0:   pen += 1.2
-    if crew < 50.0:   pen += 1.2
+    if oxygen < 60: pen += 20.0
+    if oxygen < 30: pen += 40.0
+
+    if food < 60: pen += 12.0
+    if food < 30: pen += 25.0
+
+    if water < 60: pen += 12.0
+    if water < 30: pen += 25.0
+
+    if ship < 60: pen += 18.0
+    if ship < 30: pen += 35.0
+
+    # Fuel affects morale too
+    if fuel < 60: pen += 12.0
+    if fuel < 30: pen += 25.0
+    if fuel < 10: pen += 45.0
+
+    # Extra brutal if oxygen is REALLY low
+    if oxygen < 25.0:
+        pen += 15.0
 
     morale -= pen * dt
     STATE["morale"] = clamp01_100(morale)
@@ -311,7 +327,6 @@ def step_sim(dt: float) -> None:
     if STATE["status"] == "running":
         check_success_and_bounds()
 
-    update_morale_from_low_stats(dt)
     update_camera()
 
 
@@ -426,7 +441,7 @@ def apply_propulsion(dvx, dvy):
 # 
 def update_resources(dt: float) -> None:
     # DEBUG: super fast oxygen drain
-    DEBUG_FAST_OXYGEN = True
+    DEBUG_FAST_OXYGEN = False
     if DEBUG_FAST_OXYGEN:
         STATE["oxygen"] -= 200.0 * dt  # hits 0 in ~0.5 sec
     else:
