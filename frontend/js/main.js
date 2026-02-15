@@ -180,21 +180,31 @@ async function updatePlanetUI() {
   if (!sim.state) return;
 
   const orbitalPrompt = document.getElementById("orbitalPrompt");
-  const eventText = document.getElementById("orbitalEventText"); // if you have it
+  const eventText = document.getElementById("orbitalEventText");
+  const landBtn = document.getElementById("landBtn");
+  const ignoreBtn = document.getElementById("ignoreBtn");
+
   const ev = sim.state.pending_event;
 
   if (!ev) {
-    orbitalPrompt.style.display = "none";
+    if (orbitalPrompt) orbitalPrompt.style.display = "none";
     return;
   }
 
-  // Show prompt
+  // Show prompt text
   if (eventText) eventText.textContent = ev.prompt || "Decision required.";
-  orbitalPrompt.style.display = "flex";
+
+  // Update button labels dynamically (works for any 2-choice event)
+  if (landBtn && ev.choices?.[0]) landBtn.textContent = ev.choices[0].label ?? "YES";
+  if (ignoreBtn && ev.choices?.[1]) ignoreBtn.textContent = ev.choices[1].label ?? "NO";
+
+  // Show prompt overlay
+  if (orbitalPrompt) orbitalPrompt.style.display = "flex";
 
   // Pause stepping while choice is up
   sim.started = false;
 }
+
 
 
 
@@ -293,17 +303,24 @@ function initPlanetMenu() {
   const ignoreBtn = document.getElementById("ignoreBtn");
 
   landBtn.onclick = async () => {
-    await apiResolveEvent("repair");
+    const ev = sim.state?.pending_event;
+    if (!ev?.choices?.[0]) return;
+
+    await apiResolveEvent(ev.choices[0].id);
     orbitalPrompt.style.display = "none";
-    sim.started = true; // resume
+    sim.started = true;
   };
 
   ignoreBtn.onclick = async () => {
-    await apiResolveEvent("skip");
+    const ev = sim.state?.pending_event;
+    if (!ev?.choices?.[1]) return;
+
+    await apiResolveEvent(ev.choices[1].id);
     orbitalPrompt.style.display = "none";
-    sim.started = true; // resume
+    sim.started = true;
   };
 }
+
 
 // Call this once during bootup
 initPlanetMenu();

@@ -37,7 +37,14 @@ def api_event_resolve():
         return jsonify(state_payload())
 
     # Basic validation
-    if choice not in ("repair", "skip"):
+    ev_type = ev.get("type")
+
+    valid = {
+        "planet_latch_repair": {"repair", "skip"},
+        "planet_water_recycler": {"fix", "ignore"},
+    }.get(ev_type, set())
+
+    if choice not in valid:
         return jsonify(state_payload())
 
     # --- Apply consequences for this event type ---
@@ -54,6 +61,14 @@ def api_event_resolve():
         # If ship health < 50, oxygen decreases by 25% at every planet (on each latch decision)
         if STATE.get("ship_health", 100.0) < 50.0:
             STATE["oxygen"] = max(0.0, STATE.get("oxygen", 100.0) * 0.75)
+    elif ev.get("type") == "planet_water_recycler":
+        if choice == "fix":
+            # “Stopping costs something”: simplest is food down 10%
+            STATE["food"] = max(0.0, STATE.get("food", 100.0) * 0.90)
+            # Water stays same
+        elif choice == "ignore":
+            # Water drops immediately by a chunk
+            STATE["water"] = max(0.0, STATE.get("water", 100.0) - 20.0)
 
     # Clear event so sim resumes
     STATE["pending_event"] = None

@@ -9,8 +9,39 @@ from sim.config import (
     MAX_WORLD_ABS, CAM_ALPHA, LOOKAHEAD
 )
 from sim.mathutil import dist
+import random
 
+def maybe_create_latch_event(planet_id: str) -> None:
+    # Don’t overwrite an existing event
+    if STATE.get("pending_event") is not None:
+        return
 
+    # Example: 50/50 which event appears (tweak later)
+    # You can also do weighted choices.
+    r = random.random()
+
+    if r < 0.5:
+        # Ship repair event (your existing one)
+        STATE["pending_event"] = {
+            "type": "planet_latch_repair",
+            "planet_id": planet_id,
+            "prompt": "Vessel latched. Stop to repair ship?",
+            "choices": [
+                {"id": "repair", "label": "YES, PROCEED"},
+                {"id": "skip", "label": "NO, STAY IN ORBIT"},
+            ],
+        }
+    else:
+        # New: water recycler failure event
+        STATE["pending_event"] = {
+            "type": "planet_water_recycler",
+            "planet_id": planet_id,
+            "prompt": "Water recycler is failing. Stop to fix it?",
+            "choices": [
+                {"id": "fix", "label": "YES, FIX IT"},
+                {"id": "ignore", "label": "NO, RISK IT"},
+            ],
+        }
 
 
 def accel_from_planets(rocket: Rocket, planets: List[Planet]) -> Tuple[float, float]:
@@ -112,15 +143,7 @@ def update_reveals_and_collisions(dt: float) -> None:
             if STATE.get("pending_event") is None:
                 # (optional) only ask on good planets to match your current UI
                 if p.kind == "good":
-                    STATE["pending_event"] = {
-                        "type": "planet_latch_repair",
-                        "planet_id": p.id,
-                        "prompt": "Vessel latched. Stop to repair ship?",
-                        "choices": [
-                            {"id": "repair", "label": "YES, PROCEED"},
-                            {"id": "skip", "label": "NO, STAY IN ORBIT"},
-                        ],
-                    }
+                    maybe_create_latch_event(p.id)
 
 
             # Snap position to avoid clipping
@@ -306,7 +329,12 @@ def update_resources(dt: float) -> None:
     # 3. Crew Health starts dropping if Oxygen or Food hits 0
     if STATE["oxygen"] <= 0 or STATE["food"] <= 0:
         STATE["crew_survival"] -= 0.5 * dt # Health drops faster than resources
-    
+
+    if STATE.get("water_recycler_broken", False):
+        STATE["water"] -= 0.10 * dt  # faster drain
+    else:
+        STATE["water"] -= 0.04 * dt  # normal
+
     # Clamp everything to 0 so they don't go negative
     for key in ["oxygen", "food", "water", "fuel", "crew_health"]:
         STATE[key] = max(0, STATE[key])
