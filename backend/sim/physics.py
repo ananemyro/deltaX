@@ -194,7 +194,7 @@ def update_reveals_and_collisions(dt: float) -> None:
         # Orbital Physics
         dx, dy = rocket.x - p.x, rocket.y - p.y
         r = math.sqrt(dx * dx + dy * dy)
-        orbital_speed = math.sqrt(G * p.mass / r)
+        orbital_speed = math.sqrt(2 * G * p.mass / r)
         tx, ty = dy / r, -dx / r # Tangent vector
         
         target_vx = tx * orbital_speed
