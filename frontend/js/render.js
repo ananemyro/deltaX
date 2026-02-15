@@ -846,7 +846,7 @@ function drawEmergencyBurnCounter(canvas, ctx) {
   // 3. Draw Labels
   ctx.fillStyle = "#9aa6b2"; 
   ctx.font = "bold 9px monospace";
-  ctx.fillText("TOTAL CHARGES", x + 12, y + 18);
+  ctx.fillText("EMERGENCY PROPULSIONS", x + 12, y + 18);
 
   // 4. Draw Main Number (Total Pool)
   ctx.fillStyle = statusColor;
