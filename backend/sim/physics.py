@@ -109,16 +109,22 @@ def update_morale_from_low_stats(dt: float) -> None:
 
 
 def maybe_create_latch_event(planet_id: str) -> None:
-    # Don’t overwrite an existing event
     if STATE.get("pending_event") is not None:
         return
 
-    # Example: 50/50 which event appears (tweak later)
-    # You can also do weighted choices.
-    r = random.random()
+    last = STATE.get("last_event_type")
 
-    if r < 0.5:
-        # Ship repair event (your existing one)
+    # Candidate events
+    options = ["planet_latch_repair", "planet_crew_rest", "planet_water_recycler"]
+
+    # Remove last event type so we don't repeat twice in a row
+    if last in options and len(options) > 1:
+        options.remove(last)
+
+    ev_type = random.choice(options)
+    STATE["last_event_type"] = ev_type
+
+    if ev_type == "planet_latch_repair":
         STATE["pending_event"] = {
             "type": "planet_latch_repair",
             "planet_id": planet_id,
@@ -128,8 +134,19 @@ def maybe_create_latch_event(planet_id: str) -> None:
                 {"id": "skip", "label": "NO, STAY IN ORBIT"},
             ],
         }
-    else:
-        # New: water recycler failure event
+
+    elif ev_type == "planet_crew_rest":
+        STATE["pending_event"] = {
+            "type": "planet_crew_rest",
+            "planet_id": planet_id,
+            "prompt": "Crew requests rest. Stop to recover morale?",
+            "choices": [
+                {"id": "rest", "label": "YES, LET THEM REST"},
+                {"id": "push", "label": "NO, KEEP GOING"},
+            ],
+        }
+
+    else:  # planet_water_recycler
         STATE["pending_event"] = {
             "type": "planet_water_recycler",
             "planet_id": planet_id,
@@ -321,7 +338,6 @@ def step_sim(dt: float) -> None:
         update_camera()
         return
 
-    update_reveals_and_collisions(dt)
     update_reveals_and_collisions(dt)
 
     if STATE.get("latched_planet_id") is None:

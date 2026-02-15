@@ -169,12 +169,6 @@ async function updatePlanetUI() {
   sim.started = false;
 }
 
-// Update the ignoreBtn in initPlanetMenu
-document.getElementById("ignoreBtn").onclick = () => {
-    ignoredPlanetId = sim.state.latched_planet_id; // Remember this planet
-    document.getElementById("orbitalPrompt").style.display = "none";
-};
-
 function initPlanetMenu() {
   const orbitalPrompt = document.getElementById("orbitalPrompt");
   const landBtn = document.getElementById("landBtn");

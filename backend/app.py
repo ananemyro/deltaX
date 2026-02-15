@@ -41,6 +41,7 @@ def api_event_resolve():
     valid = {
         "planet_latch_repair": {"repair", "skip"},
         "planet_water_recycler": {"fix", "ignore"},
+        "planet_crew_rest": {"rest", "push"},
     }.get(ev_type, set())
 
     if choice not in valid:
@@ -66,6 +67,14 @@ def api_event_resolve():
         # If ship health < 50, oxygen decreases by 25% at every planet decision
         if STATE.get("ship_health", 100.0) < 50.0:
             STATE["oxygen"] = max(0.0, STATE.get("oxygen", 100.0) * 0.75)
+
+    elif ev_type == "planet_crew_rest":
+        if choice == "rest":
+            STATE["morale"] = min(100.0, STATE.get("morale", 100.0) + 25.0)
+            STATE["food"] = max(0.0, STATE.get("food", 100.0) - 10.0)
+        elif choice == "push":
+            STATE["morale"] = max(0.0, STATE.get("morale", 100.0) - 15.0)
+
 
     elif ev_type == "planet_water_recycler":
         if choice == "fix":

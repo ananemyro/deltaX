@@ -158,3 +158,4 @@ def reset_world(seed: Optional[int] = None) -> None:
     STATE["planets"] = planets
     STATE["camera"] = Camera(cx=rocket.x, cy=rocket.y, zoom=ZOOM_DEFAULT)
     STATE["seed"] = seed
+    STATE["last_event_type"] = None
