@@ -16,4 +16,11 @@ STATE: Dict[str, Any] = {
     "latched_planet_id": None,  # Stores the ID of the planet we are stuck to
     "countdown": 0.0,           # Timer for orange planets
 
+    "crew_survival": 100.0,
+    "food": 100.0,
+    "oxygen": 100.0,
+    "fuel": 100.0,
+
+    "space_burns_left": 3,      # 3-times allowed propulsion (out of orbit)
+    "can_space_burn": True,
 }
