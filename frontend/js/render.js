@@ -1,6 +1,7 @@
 import { sim } from "./state.js";
 import { STAR_COUNT, SHIP_SIZE, DEST_EDGE_ARROW_SIZE } from "./config.js";
 import { worldToScreen } from "./canvas.js";
+import { drawEarthAtScreen } from "./earth.js";
 
 const stars = Array.from({ length: STAR_COUNT }, () => ({
   x: Math.random(),
@@ -276,7 +277,7 @@ function drawGlobalWarning(canvas, ctx) {
     
     // --- CRITICAL FIX: Reset the "painter" to screen coordinates (0,0) ---
     // This ignores any previous planet translations
-    ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     
     // Position of the box Timer: Top Right Corner
     const boxW = 180;
@@ -398,6 +399,30 @@ function drawShip(canvas, ctx) {
   ctx.restore();
 }
 
+function drawEarthDestination(canvas, ctx) {
+  const dest = sim.state.destination;
+  const ds = worldToScreen(canvas, dest.x, dest.y);
+
+  const zoom = sim.state.camera.zoom;
+  const rPx = dest.radius * zoom;
+
+  // Only draw if it's somewhat near screen (saves a tiny bit)
+  const w = canvas.getBoundingClientRect().width;
+  const h = canvas.getBoundingClientRect().height;
+  if (ds.x < -rPx - 50 || ds.x > w + rPx + 50 || ds.y < -rPx - 50 || ds.y > h + rPx + 50) return;
+
+  drawEarthAtScreen(ctx, ds.x, ds.y, rPx, 42, 0, false);
+
+
+  // Optional label on the planet itself (like your screenshot)
+  ctx.save();
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
+  ctx.font = "bold 16px system-ui";
+  ctx.textAlign = "center";
+  ctx.fillText("EARTH", ds.x, ds.y + 6);
+  ctx.restore();
+}
+
 function drawDestinationAndArrow(canvas, ctx) {
   const dest = sim.state.destination;
   const rocket = sim.state.rocket;
@@ -406,52 +431,42 @@ function drawDestinationAndArrow(canvas, ctx) {
   const w = canvas.getBoundingClientRect().width;
   const h = canvas.getBoundingClientRect().height;
 
-  const pulse = Math.sin(Date.now() / 200) * 1.5;
-  const opacity = 0.5 + Math.sin(Date.now() / 200) * 0.1;
-
   const onScreen = (ds.x >= -60 && ds.x <= w + 60 && ds.y >= -60 && ds.y <= h + 60);
 
-  if (onScreen) {
-    ctx.beginPath();
-    ctx.arc(ds.x, ds.y, (dest.radius * sim.state.camera.zoom) + pulse, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(95, 227, 255, ${opacity})`;
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
+  // If destination is on-screen, don't draw arrow helper (prevents weird arrow on Earth)
+  if (onScreen) return;
 
-    ctx.fillStyle = "rgba(95,227,255,0.9)";
-    ctx.font = "12px system-ui";
-    ctx.fillText("TARGET", ds.x + 12, ds.y - 12);
-  }
+  // bring back these (you were using them later)
+  const pulse = Math.sin(Date.now() / 200) * 1.5;
+  const opacity = 0.5 + Math.sin(Date.now() / 200) * 0.1;
 
   const shipS = worldToScreen(canvas, rocket.x, rocket.y);
   const vx = ds.x - shipS.x;
   const vy = ds.y - shipS.y;
-  const distPixels = Math.sqrt(vx * vx + vy * vy);
 
   const pad = 40;
   const minX = pad, maxX = w - pad, minY = pad, maxY = h - pad;
 
   let ax = ds.x, ay = ds.y;
 
-  if (!onScreen) {
-    const cx = w / 2, cy = h / 2;
-    const rx = ds.x - cx, ry = ds.y - cy;
-    const tCandidates = [];
+  // Clamp arrow to screen edge
+  const cx = w / 2, cy = h / 2;
+  const rx = ds.x - cx, ry = ds.y - cy;
+  const tCandidates = [];
 
-    if (Math.abs(rx) > 1e-6) { tCandidates.push((minX - cx) / rx); tCandidates.push((maxX - cx) / rx); }
-    if (Math.abs(ry) > 1e-6) { tCandidates.push((minY - cy) / ry); tCandidates.push((maxY - cy) / ry); }
+  if (Math.abs(rx) > 1e-6) { tCandidates.push((minX - cx) / rx); tCandidates.push((maxX - cx) / rx); }
+  if (Math.abs(ry) > 1e-6) { tCandidates.push((minY - cy) / ry); tCandidates.push((maxY - cy) / ry); }
 
-    let best = null;
-    for (const t of tCandidates) {
-      if (t <= 0) continue;
-      const x = cx + rx * t;
-      const y = cy + ry * t;
-      if (x >= minX - 2 && x <= maxX + 2 && y >= minY - 2 && y <= maxY + 2) {
-        if (best === null || t < best.t) best = { t, x, y };
-      }
+  let best = null;
+  for (const t of tCandidates) {
+    if (t <= 0) continue;
+    const x = cx + rx * t;
+    const y = cy + ry * t;
+    if (x >= minX - 2 && x <= maxX + 2 && y >= minY - 2 && y <= maxY + 2) {
+      if (best === null || t < best.t) best = { t, x, y };
     }
-    if (best) { ax = best.x; ay = best.y; }
   }
+  if (best) { ax = best.x; ay = best.y; }
 
   const ang = Math.atan2(vy, vx);
 
@@ -463,32 +478,29 @@ function drawDestinationAndArrow(canvas, ctx) {
   ctx.shadowColor = "rgba(95, 227, 255, 0.8)";
 
   ctx.beginPath();
-  const arrowHeadSize = DEST_EDGE_ARROW_SIZE + (onScreen ? 0 : pulse);
+  const arrowHeadSize = DEST_EDGE_ARROW_SIZE + pulse;
   ctx.moveTo(0, 0);
   ctx.lineTo(-arrowHeadSize, -arrowHeadSize / 1.5);
   ctx.lineTo(-arrowHeadSize * 0.7, 0);
   ctx.lineTo(-arrowHeadSize, arrowHeadSize / 1.5);
   ctx.closePath();
 
-  ctx.fillStyle = `rgba(95, 227, 255, ${onScreen ? 0.3 : 0.9})`;
+  ctx.fillStyle = `rgba(95, 227, 255, 0.9)`;
   ctx.fill();
   ctx.restore();
 
-    if (!onScreen) {
-        // Anchor so start distance is exactly 10 AU on display
-        if (sim.initialDistance == null) sim.initialDistance = remainingDistanceUnits();
+  // distance text
+  if (sim.initialDistance == null) sim.initialDistance = remainingDistanceUnits();
+  const dUnits = remainingDistanceUnits();
+  const dAU = 10.0 * (dUnits / Math.max(1e-6, sim.initialDistance));
 
-        const dUnits = remainingDistanceUnits();
-        const dAU = 10.0 * (dUnits / Math.max(1e-6, sim.initialDistance));
-
-        ctx.fillStyle = `rgba(95, 227, 255, ${opacity})`;
-        ctx.font = "bold 12px monospace";
-        ctx.fillText(`${dAU.toFixed(2)} AU`, ax - 28, ay + 30);
-      }
-
+  ctx.fillStyle = `rgba(95, 227, 255, ${opacity})`;
+  ctx.font = "bold 12px monospace";
+  ctx.fillText(`${dAU.toFixed(2)} AU`, ax - 28, ay + 30);
 }
 
 function drawJoystickVector(canvas, ctx) {
+  if (len(sim.joyVec.x, sim.joyVec.y) < 0.05) return;
   const r = sim.state.rocket;
   const ship = worldToScreen(canvas, r.x, r.y);
 
@@ -525,10 +537,16 @@ export function renderFrame(canvas, ctx) {
   ctx.clearRect(0, 0, w, h);
   drawStars(canvas, ctx);
   drawTrail(canvas, ctx);
+
   drawPlanets(canvas, ctx);
+
+  // Draw Earth destination BEFORE the arrow helper
+  drawEarthDestination(canvas, ctx);
+
   drawDestinationAndArrow(canvas, ctx);
+
   drawShip(canvas, ctx);
   drawJoystickVector(canvas, ctx);
 
-  drawGlobalWarning(canvas, ctx); // this is the gobal timer (for orange planets)
+  drawGlobalWarning(canvas, ctx);
 }
