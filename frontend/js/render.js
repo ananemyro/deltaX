@@ -256,8 +256,138 @@ function drawPlanets(canvas, ctx) {
 }
 
 
-
+//version 3: patchy version, not working properly
 // New function that will have the flsahing timer for orange-> red timers
+// function drawGlobalWarning(canvas, ctx) {
+//   // 1. Check if we are even latched
+//   const latchedId = sim.state.latched_planet_id;
+//   if (latchedId === null) return;
+
+//   const countdown = sim.state.countdown;
+  
+//   // 2. Find the planet
+//   const currentPlanet = sim.state.planets.find(p => p.id === latchedId);
+
+//   // 3. Only show if it's a ticking orange ("okay") planet
+//   if (currentPlanet && currentPlanet.status === "okay") {
+//     const w = canvas.getBoundingClientRect().width;
+//     const opacity = 0.4 + Math.sin(Date.now() / 150) * 0.4;
+
+//     // version 0
+//     // ctx.save();
+    
+//     // // --- CRITICAL FIX: Reset the "painter" to screen coordinates (0,0) ---
+//     // // This ignores any previous planet translations
+//     // ctx.setTransform(1, 0, 0, 1, 0, 0);
+    
+//     // // Position of the box Timer: Top Right Corner
+//     // const boxW = 180;
+//     // const boxH = 60;
+//     // const padding = 20;
+//     // const x = w - boxW - padding;
+//     // const y = padding;
+//     // let x = w - boxW - 20;
+//     // let y = 20;
+
+//     // Inside drawGlobalWarning in render.js
+//   ctx.save();
+
+//   // FIX: Use devicePixelRatio to match the rest of your UI scaling
+//   const dpr = window.devicePixelRatio || 1;
+//   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+//   // Position of the box Timer: Top Right Corner
+//   const boxW = 180;
+//   const boxH = 60;
+//   const padding = 20;
+//   const x = (w / dpr) - boxW - padding; // Adjust X for scaling
+//   const y = padding;
+
+
+//     // if (countdown < 3) {
+//     //   // Shake the box randomly by a few pixels
+//     //   x += (Math.random() - 0.5) * 5;
+//     //   y += (Math.random() - 0.5) * 5;
+//     // }
+
+
+
+//     // Draw the Red Background Box
+//     ctx.fillStyle = `rgba(231, 76, 60, ${opacity})`;
+//     ctx.beginPath();
+//     ctx.rect(x, y, boxW, boxH); 
+//     ctx.fill();
+
+//     // Draw the Border
+//     ctx.strokeStyle = "white";
+//     ctx.lineWidth = 2;
+//     ctx.stroke();
+
+//     // Draw Text
+//     ctx.fillStyle = "white";
+//     ctx.font = "bold 14px monospace";
+//     ctx.textAlign = "center";
+//     ctx.fillText("STABILITY WARNING", x + boxW / 2, y + 25);
+
+//     ctx.font = "bold 24px monospace";
+//     // Show countdown with 2 decimal places for intensity
+//     ctx.fillText(countdown.toFixed(2) + "s", x + boxW / 2, y + 50);
+
+//     ctx.restore();
+//   }
+// }
+
+
+// versioj 4: better, but still out of place
+// function drawGlobalWarning(canvas, ctx) {
+//   const latchedId = sim.state.latched_planet_id;
+//   if (latchedId === null) return;
+
+//   const currentPlanet = sim.state.planets.find(p => p.id === latchedId);
+//   if (currentPlanet && currentPlanet.status === "okay") {
+//     const countdown = sim.state.countdown;
+//     const w = canvas.getBoundingClientRect().width;
+//     const opacity = 0.4 + Math.sin(Date.now() / 150) * 0.4;
+
+//     ctx.save();
+    
+//     // --- FIX 1: Use the correct pixel ratio for your screen ---
+//     const dpr = window.devicePixelRatio || 1;
+//     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    
+//     // --- FIX 2: Move it further down so it isn't hidden by the progression chart ---
+//     const boxW = 180;
+//     const boxH = 60;
+//     const padding = 20;
+    
+//     // Position it in the Top Right, but below the top of the screen
+//     const x = w - boxW - padding;
+//     const y = padding + 100; // Increased padding from 20 to 120
+
+//     // Draw the Red Background Box
+//     ctx.fillStyle = `rgba(231, 76, 60, ${opacity})`;
+//     ctx.beginPath();
+//     ctx.roundRect(x, y, boxW, boxH, 8); // Use roundRect for consistent UI style
+//     ctx.fill();
+
+//     ctx.strokeStyle = "white";
+//     ctx.lineWidth = 2;
+//     ctx.stroke();
+
+//     // Draw Text
+//     ctx.fillStyle = "white";
+//     ctx.font = "bold 14px monospace";
+//     ctx.textAlign = "center";
+//     ctx.fillText("STABILITY WARNING", x + boxW / 2, y + 25);
+
+//     ctx.font = "bold 24px monospace";
+//     ctx.fillText(countdown.toFixed(2) + "s", x + boxW / 2, y + 52);
+
+//     ctx.restore();
+//   }
+// }
+
+
 function drawGlobalWarning(canvas, ctx) {
   // 1. Check if we are even latched
   const latchedId = sim.state.latched_planet_id;
@@ -277,7 +407,7 @@ function drawGlobalWarning(canvas, ctx) {
     
     // --- CRITICAL FIX: Reset the "painter" to screen coordinates (0,0) ---
     // This ignores any previous planet translations
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
     
     // Position of the box Timer: Top Right Corner
     const boxW = 180;
@@ -321,6 +451,10 @@ function drawGlobalWarning(canvas, ctx) {
     ctx.restore();
   }
 }
+
+
+
+
 
 
 
@@ -663,6 +797,7 @@ function drawJoystickVector(canvas, ctx) {
 function drawEmergencyBurnCounter(canvas, ctx) {
   if (!sim.state) return;
 
+  // Pull the new data you just added to serialize.py
   const currentBurns = sim.state.space_burns_left ?? 10;
   const burstCount = sim.state.consecutive_burns ?? 0;
   const canSpaceBurn = sim.state.can_space_burn ?? true;
@@ -688,17 +823,25 @@ function drawEmergencyBurnCounter(canvas, ctx) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
+
   // 2. Determine Status Colors/Text
-  let statusColor = "#5fe3ff"; // Default Cyan
+  // Inside drawEmergencyBurnCounter in render.js
+  // 2. Determine Status Colors/Text - DECLARE WITH 'LET'
+  let statusColor = "#5fe3ff"; 
   let burstText = `BURST: ${burstCount}/3`;
 
   if (isLatched) {
-    statusColor = "#6dff57"; // Green
-    burstText = "ORBITAL: UNLIMITED";
+      statusColor = "#6dff57"; // Green
+      burstText = "ORBITAL: UNLIMITED";
   } else if (!canSpaceBurn) {
-    statusColor = "#ff4d4d"; // Red
-    burstText = "LIMIT HIT: LATCH TO RESET";
+      statusColor = "#ff4d4d"; // Red
+      burstText = "LIMIT HIT: LATCH TO RESET";
+  } else {
+      statusColor = "#5fe3ff"; // Cyan
+      burstText = `BURST: ${burstCount}/3`;
   }
+
+
 
   // 3. Draw Labels
   ctx.fillStyle = "#9aa6b2"; 

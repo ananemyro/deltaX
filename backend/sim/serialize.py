@@ -130,7 +130,8 @@ def state_payload() -> Dict[str, Any]:
         "countdown": STATE.get("countdown", 0.0),
 
         # --- CRITICAL: Add these lines ---
-        "space_burns_left": STATE.get("space_burns_left", 3),
+        "consecutive_burns": STATE.get("consecutive_burns", 0),
+        "space_burns_left": STATE.get("space_burns_left", 10),
         "can_space_burn": STATE.get("can_space_burn", True),
         
         "fuel": STATE.get("fuel", 100.0),

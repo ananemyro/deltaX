@@ -137,16 +137,17 @@ def api_plan():
     # Handle State Transitions
     if is_latched:
         STATE["latched_planet_id"] = None
-        STATE["consecutive_burns"] = 0   # Reset burst on latch
+        STATE["consecutive_burns"] = 0   # Reset when taking off from a planet
         STATE["can_space_burn"] = True
     else:
-        STATE["space_burns_left"] -= 1   # Spend from pool of 10
-        STATE["consecutive_burns"] += 1  # Increment burst toward 3
+        # Increment the burst count
+        STATE["consecutive_burns"] = STATE.get("consecutive_burns", 0) + 1 
+        STATE["space_burns_left"] -= 1
         
-        # If burst limit reached, lock until next latch
+        # If 3 burns are hit, lock the engines
         if STATE["consecutive_burns"] >= 3:
-            STATE["can_space_burn"] = False 
-
+            STATE["can_space_burn"] = False
+            
     STATE["last_plan_time"] = t
     return jsonify(state_payload())
 
