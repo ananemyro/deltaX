@@ -1,3 +1,4 @@
+<!-- index.html -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -10,6 +11,31 @@
   <div class="wrap">
     <div class="stage">
       <canvas id="c"></canvas>
+
+      <!-- Intro overlay (title slide) -->
+      <div id="introOverlay" class="intro-overlay">
+        <div class="intro-card">
+          <h1>Your Current Mission: deltaX</h1>
+            <p class="intro-story">
+              This is Mission Control.
+              Somewhere out there, a crew is drifting through deep space.
+              Their engines are weak. Their supplies are finite.
+              Their only hope is <b>you</b>.
+            </p>
+          <ul>
+              <li><b>Objective:</b> Guide the ship safely back to the Earth.</li>
+              <li><b>Gravity assist:</b> Use planets to bend the trajectory.</li>
+              <li><b>Danger:</b> Some planets are unstable. Fly too close and they may trap or destroy the ship.</li>
+              <li><b>Controls:</b> Use Mission Control to plan burns and adjust direction.</li>
+            </ul>
+
+            <p class="intro-story" style="margin-top:14px;">
+              No pressure. If you miss - nobody will know.
+                <i>Except you.</i>
+            </p>
+          <button id="playBtn" class="intro-play">Play</button>
+        </div>
+      </div>
 
       <div class="hudTop">
         <div class="pill" style="width: 300px;">
@@ -58,7 +84,7 @@
       <div class="card">
         <div class="title">Life Support & Resources</div>
         <div class="resource-block" style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
-          
+
           <div style="display:flex; align-items:center; gap:10px;">
             <span class="label" style="width:75px; flex-shrink:0;">Crew</span>
             <div class="progressBar" style="flex-grow:1; height:6px;">
