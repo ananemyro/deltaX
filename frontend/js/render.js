@@ -528,40 +528,103 @@ function drawJoystickVector(canvas, ctx) {
   ctx.fill();
 }
 
+
+// version 0: when it only had the initial brist count 
+// function drawEmergencyBurnCounter(canvas, ctx) {
+//   if (!sim.state) return;
+
+//   const currentBurns = sim.state.space_burns_left ?? 3;
+//   const canSpaceBurn = sim.state.can_space_burn ?? true;
+//   const isLatched = sim.state.latched_planet_id !== null;
+
+//   ctx.save();
+//   // Ensure we are drawing in screen space
+//   ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
+
+//   const w = canvas.getBoundingClientRect().width;
+//   const h = canvas.getBoundingClientRect().height;
+
+//   // --- POSITION ADJUSTMENT ---
+//   const x = 20; 
+//   const y = h - 80; // This moves it to the bottom-left corner
+
+//   // 1. Draw Background Box
+//   ctx.fillStyle = "rgba(13, 15, 20, 0.8)";
+//   ctx.beginPath();
+//   ctx.roundRect(x, y, 140, 60, 8);
+//   ctx.fill();
+//   ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+//   ctx.stroke();
+
+//   // 2. Draw Label
+//   ctx.fillStyle = "#9aa6b2"; 
+//   ctx.font = "bold 10px monospace";
+//   ctx.fillText("EMERGENCY THRUST", x + 10, y + 20);
+
+//   // 3. Draw Number & Status
+//   let statusColor = "#5fe3ff"; 
+//   let statusText = "READY";
+
+//   if (isLatched) {
+//     statusColor = "#6dff57"; 
+//     statusText = "ORBITAL: UNLIMITED";
+//   } else if (!canSpaceBurn) {
+//     statusColor = "#ff4d4d"; 
+//     statusText = "COOLDOWN";
+//   }
+
+//   ctx.fillStyle = statusColor;
+//   ctx.font = "bold 28px monospace";
+//   ctx.fillText(currentBurns, x + 10, y + 45);
+
+//   ctx.font = "bold 9px monospace";
+//   ctx.fillText(statusText, x + 40, y + 45);
+
+//   ctx.restore();
+// }
+
+
+
+
 function drawEmergencyBurnCounter(canvas, ctx) {
   if (!sim.state) return;
 
-  const currentBurns = sim.state.space_burns_left ?? 3;
+  const currentBurns = sim.state.space_burns_left ?? 10;
+  const burstCount = sim.state.consecutive_burns ?? 0;
   const canSpaceBurn = sim.state.can_space_burn ?? true;
   const isLatched = sim.state.latched_planet_id !== null;
 
   ctx.save();
-  // Ensure we are drawing in screen space
   ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
 
   const w = canvas.getBoundingClientRect().width;
   const h = canvas.getBoundingClientRect().height;
 
+
   // --- POSITION ADJUSTMENT ---
   const x = 20;
   const y = h - 80; // This moves it to the bottom-left corner
 
+
   // 1. Draw Background Box
-  ctx.fillStyle = "rgba(13, 15, 20, 0.8)";
+  ctx.fillStyle = "rgba(13, 15, 20, 0.85)";
   ctx.beginPath();
-  ctx.roundRect(x, y, 140, 60, 8);
+  ctx.roundRect(x, y, 160, 60, 8); // Widened slightly for the extra text
   ctx.fill();
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+  
+  // Visual alert: Red border if the burst limit is hit
+  ctx.strokeStyle = canSpaceBurn ? "rgba(255, 255, 255, 0.1)" : "#ff4d4d";
+  ctx.lineWidth = 2;
   ctx.stroke();
 
   // 2. Draw Label
-  ctx.fillStyle = "#9aa6b2";
-  ctx.font = "bold 10px monospace";
-  ctx.fillText("EMERGENCY THRUST", x + 10, y + 20);
+  ctx.fillStyle = "#9aa6b2"; 
+  ctx.font = "bold 9px monospace";
+  ctx.fillText("TOTAL CHARGES", x + 12, y + 18);
 
-  // 3. Draw Number & Status
-  let statusColor = "#5fe3ff";
-  let statusText = "READY";
+  // 3. Draw Main Number (Total Pool)
+  let statusColor = canSpaceBurn ? "#5fe3ff" : "#ff4d4d";
+  if (isLatched) statusColor = "#6dff57";
 
   if (isLatched) {
     statusColor = "#6dff57";
@@ -571,16 +634,30 @@ function drawEmergencyBurnCounter(canvas, ctx) {
     statusText = "COOLDOWN";
   }
 
+  // let statusColor = "#5fe3ff";
+  let statusText = "READY";
+
   ctx.fillStyle = statusColor;
   ctx.font = "bold 28px monospace";
-  ctx.fillText(currentBurns, x + 10, y + 45);
+  ctx.fillText(`${currentBurns}`, x + 12, y + 48);
 
-  ctx.font = "bold 9px monospace";
-  ctx.fillText(statusText, x + 40, y + 45);
+
+
+  
+  // 4. Draw Sub-status (Burst Tracker)
+  let burstStatus = `BURST: ${burstCount}/3`;
+  if (isLatched) {
+    burstStatus = "ORBITAL: UNLIMITED";
+  } else if (!canSpaceBurn) {
+    burstStatus = "LIMIT HIT: LATCH TO RESET";
+  }
+
+  ctx.fillStyle = statusColor;
+  ctx.font = "bold 10px monospace";
+  ctx.fillText(burstStatus, x + 50, y + 45);
 
   ctx.restore();
 }
-
 
 
 

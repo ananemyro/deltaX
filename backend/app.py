@@ -61,6 +61,54 @@ def api_reset():
 
 
 # version1: taking into account the difference between like 
+# @app.post("/api/plan")
+# def api_plan():
+#     if STATE["status"] != "running":
+#         return jsonify(state_payload())
+
+#     data = request.get_json(silent=True) or {}
+#     t = float(STATE["t"])
+
+#     # 1. Anti-spam cooldown check
+#     if (t - float(STATE["last_plan_time"])) < PLAN_COOLDOWN_S:
+#         return jsonify(state_payload())
+
+#     rocket = STATE["rocket"]
+#     is_latched = STATE.get("latched_planet_id") is not None
+
+#     # 2. EMERGENCY BURN LOGIC: Only allow if latched OR if charges remain
+#     if not is_latched:
+#         burns_left = STATE.get("space_burns_left", 0)
+        
+#         can_burn = STATE.get("can_space_burn", True)
+        
+#         if burns_left <= 0 or not can_burn:
+#             # Block the move if out of charges or cooling down
+#             return jsonify(state_payload())
+
+#     # 3. APPLY VELOCITY (standard physics)
+#     dvx = float(data.get("dvx", 0.0))
+#     dvy = float(data.get("dvy", 0.0))
+#     rocket.vx += dvx
+#     rocket.vy += dvy
+
+#     # 4. UPDATE CHARGES
+#     if is_latched:
+#         # Orbital: Unlimited burns + Reset the space capability
+#         STATE["latched_planet_id"] = None
+#         STATE["can_space_burn"] = True 
+#     else:
+#         # Deep Space: Spend a charge and lock until next latch
+#         STATE["space_burns_left"] -= 1
+#         STATE["can_space_burn"] = False 
+#         # Deduct 15% fuel for emergency maneuvers
+#         STATE["fuel"] = max(0, STATE.get("fuel", 100) - 15.0) 
+
+#     STATE["last_plan_time"] = t
+#     return jsonify(state_payload())
+
+
+# versio2 : allowing multiple consecutive propulsion
 @app.post("/api/plan")
 def api_plan():
     if STATE["status"] != "running":
@@ -68,43 +116,40 @@ def api_plan():
 
     data = request.get_json(silent=True) or {}
     t = float(STATE["t"])
-
-    # 1. Anti-spam cooldown check
-    if (t - float(STATE["last_plan_time"])) < PLAN_COOLDOWN_S:
-        return jsonify(state_payload())
-
     rocket = STATE["rocket"]
     is_latched = STATE.get("latched_planet_id") is not None
 
-    # 2. EMERGENCY BURN LOGIC: Only allow if latched OR if charges remain
+    # --- UPDATED PROPULSION LOGIC ---
     if not is_latched:
-        burns_left = STATE.get("space_burns_left", 0)
-        can_burn = STATE.get("can_space_burn", True)
+        total_left = STATE.get("space_burns_left", 0)
+        burst_count = STATE.get("consecutive_burns", 0)
         
-        if burns_left <= 0 or not can_burn:
-            # Block the move if out of charges or cooling down
+        # Check total pool (10) and burst limit (3)
+        if total_left <= 0 or burst_count >= 3:
             return jsonify(state_payload())
 
-    # 3. APPLY VELOCITY (standard physics)
+    # Apply Velocity
     dvx = float(data.get("dvx", 0.0))
     dvy = float(data.get("dvy", 0.0))
     rocket.vx += dvx
     rocket.vy += dvy
 
-    # 4. UPDATE CHARGES
+    # Handle State Transitions
     if is_latched:
-        # Orbital: Unlimited burns + Reset the space capability
         STATE["latched_planet_id"] = None
-        STATE["can_space_burn"] = True 
+        STATE["consecutive_burns"] = 0   # Reset burst on latch
+        STATE["can_space_burn"] = True
     else:
-        # Deep Space: Spend a charge and lock until next latch
-        STATE["space_burns_left"] -= 1
-        STATE["can_space_burn"] = False 
-        # Deduct 15% fuel for emergency maneuvers
-        STATE["fuel"] = max(0, STATE.get("fuel", 100) - 15.0) 
+        STATE["space_burns_left"] -= 1   # Spend from pool of 10
+        STATE["consecutive_burns"] += 1  # Increment burst toward 3
+        
+        # If burst limit reached, lock until next latch
+        if STATE["consecutive_burns"] >= 3:
+            STATE["can_space_burn"] = False 
 
     STATE["last_plan_time"] = t
     return jsonify(state_payload())
+
 
 
 

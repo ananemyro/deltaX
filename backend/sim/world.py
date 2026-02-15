@@ -70,7 +70,8 @@ def reset_world(seed: Optional[int] = None) -> None:
     STATE["latched_planet_id"] = None
     STATE["countdown"] = 10.0
 
-    STATE["space_burns_left"] = 3
+    STATE["space_burns_left"] = 10      
+    STATE["consecutive_burns"] = 0      # this is tracking consecutive burns left
     STATE["can_space_burn"] = True
     
     STATE["fuel"] = 100.0
