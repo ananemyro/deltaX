@@ -184,7 +184,7 @@ window.visitedPlanets = new Set(); // Using window makes it global
 // }
 
 
-
+// version 4: last working version before trying to pull event from events.py
 function updatePlanetUI() {
     if (!sim.state) return;
     const orbitalPrompt = document.getElementById("orbitalPrompt");
@@ -212,8 +212,49 @@ function updatePlanetUI() {
 }
 
 
+// version 5: pulling from events.py
+// js/main.js
+// let isFetchingEvent = false; 
 
+// async function updatePlanetUI() {
+//     if (!sim.state) return;
+//     const orbitalPrompt = document.getElementById("orbitalPrompt");
+//     const eventText = document.getElementById("orbitalEventText");
+//     const latchedId = sim.state.latched_planet_id;
 
+//     // Reset when you leave orbit
+//     if (latchedId === null) {
+//         orbitalPrompt.style.display = "none";
+//         isFetchingEvent = false; 
+//         return;
+//     }
+
+//     const p = sim.state.planets.find(planet => planet.id === latchedId);
+//     const alreadyHandled = window.visitedPlanets.has(latchedId);
+
+//     // Only trigger if: Good planet AND haven't handled it AND not currently fetching
+//     if (p && p.status === "good" && !alreadyHandled) {
+//         if (orbitalPrompt.style.display === "none" && !isFetchingEvent) {
+//             isFetchingEvent = true; // Lock the logic
+            
+//             try {
+//                 // Pulls random story from events.py via backend
+//                 const res = await fetch('http://127.0.0.1:5000/api/land', { method: 'POST' });
+//                 const data = await res.json();
+                
+//                 // Update the text in the prompt dynamically
+//                 if (eventText) eventText.textContent = data.event.text;
+                
+//                 orbitalPrompt.style.display = "flex";
+//             } catch (e) {
+//                 console.error("Event fetch failed", e);
+//                 isFetchingEvent = false; // Release lock on error
+//             }
+//         }
+//     } else {
+//         orbitalPrompt.style.display = "none";
+//     }
+// }
 
 
 
