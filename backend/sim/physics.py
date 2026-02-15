@@ -168,7 +168,7 @@ def update_reveals_and_collisions(dt: float) -> None:
             if STATE["countdown"] <= 0:
                 p.kind = "bad"
                 p.color = "#ff2c2c"
-                STATE["status"] = "failed"
+                STATE["status"] = "failed"  # tells the UI to stop
                 STATE["fail_reason"] = "planet_instability_explosion"
                 return
 
@@ -296,6 +296,7 @@ def step_sim(dt: float) -> None:
         update_camera()
         return
 
+    update_reveals_and_collisions(dt)
     update_reveals_and_collisions(dt)
 
     if STATE.get("latched_planet_id") is None:

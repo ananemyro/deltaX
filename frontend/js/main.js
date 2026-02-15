@@ -61,11 +61,16 @@ async function tick() {
     }
 
 
+    // 2. Trigger the "And then there were none" overlay on failure
+    if (s === "failed") {
+        // Reuse the showFailureOverlay function for specific planet instability text
+        showFailureOverlay(sim.state.hud.fail_reason);
+    }
 
     updateRenderCamera();
     renderFrame(canvas, ctx);
     if (missOverlay) {
-        missOverlay.style.display = sim.missed ? "grid" : "none";
+        missOverlay.style.display = (sim.missed || s === "failed") ? "grid" : "none";
     }
 
   }
@@ -73,6 +78,37 @@ async function tick() {
   requestAnimationFrame(tick);
 }
 
+
+
+
+
+function showFailureOverlay(reason) {
+    const missOv = document.getElementById("missOverlay");
+    if (missOv) {
+        // We can reuse the "And then there were none" card for instability
+        missOv.style.display = "grid";
+        sim.started = false;
+    }
+}
+
+// function showFailureOverlay(reason) {
+//     const missOv = document.getElementById("missOverlay");
+//     if (missOv && missOv.style.display !== "grid") {
+//         // Stop the simulation movement
+//         sim.started = false;
+
+//         // Show the failure overlay
+//         missOv.style.display = "grid";
+
+//         // OPTIONAL: Update the text dynamically to match the failure reason
+//         const line1 = missOv.querySelector(".miss-line1");
+//         const line2 = missOv.querySelector(".miss-line2");
+//         if (line1 && reason === "planet_instability_explosion") {
+//             line1.textContent = "Stability Lost.";
+//             line2.textContent = "The planet's core has collapsed.";
+//         }
+//     }
+// }
 
 
 
@@ -162,6 +198,9 @@ function initPlanetMenu() {
     sim.started = true;
   };
 }
+
+
+
 
 
 // Call this once during bootup
