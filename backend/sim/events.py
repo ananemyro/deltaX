@@ -2,6 +2,13 @@
 import random
 
 EVENTS = {
+
+    "hull_inspection": {
+        "text": "The hull is groaning under gravitational stress. Perform an external inspection? (Cost: 1.5s time)",
+        "yes": {"time_cost": 1.5, "ship_health": 0, "text": "Inspection complete. Hull is stable, but 1.5s of supplies were consumed."},
+        "no": {"time_cost": 0.0, "ship_health": -20.0, "text": "You pushed on. A structural seam buckled. Ship Health -20%."},
+    },
+    
     "ice_mining": {
         "text": "Scanners detect deep glacial deposits. Deploy mining drones for water?",
         "yes": {"water": 30, "fuel": -10, "text": "Drones returned with ice! Water +30, Fuel -10."},

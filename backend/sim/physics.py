@@ -291,9 +291,8 @@ def update_resources(dt: float) -> None:
         STATE["fuel"] -= 0.01 * dt
 
     # 3. Crew Health starts dropping if Oxygen or Food hits 0
-    if STATE["oxygen"] <= 0 or STATE["food"] <= 0 or STATE["water"] <= 0:
-        # Health drops if any vital resource is depleted
-        STATE["crew_health"] -= 0.5 * dt
+    if STATE["oxygen"] <= 0 or STATE["food"] <= 0:
+        STATE["crew_survival"] -= 0.5 * dt # Health drops faster than resources
     
     # Clamp everything to 0 so they don't go negative
     for key in ["oxygen", "food", "water", "fuel", "crew_health"]:
