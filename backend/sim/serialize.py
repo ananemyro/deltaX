@@ -132,6 +132,7 @@ def state_payload() -> Dict[str, Any]:
         # --- CRITICAL: Add these lines ---
         "space_burns_left": STATE.get("space_burns_left", 3),
         "can_space_burn": STATE.get("can_space_burn", True),
+        
         "fuel": STATE.get("fuel", 100.0),
         "oxygen": STATE.get("oxygen", 100.0),
         "food": STATE.get("food", 100.0),
