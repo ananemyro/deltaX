@@ -12,6 +12,36 @@
     <div class="stage">
       <canvas id="c"></canvas>
 
+      <!-- Gives user option to land -->
+      <div id="orbitalPrompt" class="pill" style="display:none; position:absolute; bottom:80px; left:50%; transform:translateX(-50%); pointer-events:auto; gap:15px; border-color:var(--accent);">
+        <span class="label">Vessel Latched. Commencing landing?</span>
+        <div style="display:flex; gap:8px;">
+            <button id="landBtn" class="primary" style="padding:4px 12px; font-size:11px;">YES, LAND</button>
+            <button id="ignoreBtn" style="padding:4px 12px; font-size:11px;">NO, STAY IN ORBIT</button>
+        </div>
+      </div>
+
+
+      <!-- updates the user on their ressources -->
+      <div id="planetMenuOverlay" class="intro-overlay" style="display:none;">
+        <div class="intro-card">
+            <h1 id="planetMenuTitle">Planet Surface Terminal</h1>
+            <p class="sub" style="margin-bottom:15px;">Life support stabilized. Select mission protocol:</p>
+            <ul>
+                <li><strong>Refine Resources:</strong> Replenish Water and Food levels.</li>
+                <li><strong>Repair Hull:</strong> Restore Crew Health.</li>
+                <li><strong>Science Logs:</strong> Record data for mission success.</li>
+            </ul>
+            <div style="display:flex; gap:10px;">
+                <button class="intro-play" style="flex:2;">START OPERATIONS</button>
+                <button id="exitPlanetBtn" class="danger" style="flex:1;">EXIT</button>
+            </div>
+        </div>
+      </div>
+
+
+
+
       <!-- Intro overlay (title slide) -->
       <div id="introOverlay" class="intro-overlay">
         <div class="intro-card">
@@ -26,14 +56,14 @@
               <li><b>Objective:</b> Guide the ship safely back to the Earth.</li>
               <li><b>Gravity assist:</b> Use planets to bend the trajectory.</li>
               <li><b>Danger:</b> Some planets are unstable. Fly too close and they may trap or destroy the ship.</li>
-              <li><b>Controls:</b> Use Mission Control to plan burns and adjust direction.</li>
+              <li><b>Controls:</b> Use Mission Control to plan the propulsions and adjust the direction.</li>
             </ul>
 
             <p class="intro-story" style="margin-top:14px;">
-              No pressure. If you miss - nobody will know.
+              No pressure. If you miss - nobody will know...
                 <i>Except you.</i>
             </p>
-          <button id="playBtn" class="intro-play">Play</button>
+          <button id="playBtn" class="intro-play">Start</button>
         </div>
       </div>
 

@@ -60,13 +60,37 @@ export function initInput() {
   const knob = document.getElementById("knob");
   const joystickMag = document.getElementById("joystickMag");
 
+
+
+  // version 0: 
+  // resetBtn.addEventListener("click", async () => {
+  //   await apiReset();
+  //   sim.started = false;
+  //   sim.joyVec = { x: 0, y: 0 };
+  //   setKnob(joystick, knob, 0, 0);
+  //   joystickMag.textContent = "0.00 g";
+  // });
+
+
+  // version1 
   resetBtn.addEventListener("click", async () => {
     await apiReset();
+    
+    // --- ADD THIS LINE HERE ---
+    // Make sure visitedPlanets is accessible here or imported from main.js
+    if (window.visitedPlanets) {
+      window.visitedPlanets.clear(); 
+    }
+    
     sim.started = false;
     sim.joyVec = { x: 0, y: 0 };
     setKnob(joystick, knob, 0, 0);
     joystickMag.textContent = "0.00 g";
   });
+
+
+
+
 
   joystick.addEventListener("pointerdown", (evt) => {
     sim.joyActive = true;
